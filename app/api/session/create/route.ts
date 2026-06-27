@@ -15,7 +15,7 @@ async function resetQuestionsForQuiz(service: ReturnType<typeof createServiceCli
   await service
     .from('questions')
     .update({ is_answered: false, skipped: false })
-    .in('category_id', categories.map(c => c.id))
+    .in('category_id', categories.map((c: { id: string }) => c.id))
 }
 
 async function createSession(service: ReturnType<typeof createServiceClient>, quizId: string) {
