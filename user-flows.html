@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuizBuilder — User Flows & Journey Maps</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white;
+    padding: 40px 48px;
+  }
+  .header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { margin-top: 8px; opacity: 0.7; font-size: 15px; }
+  .header .meta { display: flex; gap: 24px; margin-top: 20px; }
+  .header .badge {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* ── Nav ── */
+  .nav {
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0 48px;
+    display: flex;
+    gap: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-tab {
+    padding: 16px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav-tab:hover { color: #1a1a2e; }
+  .nav-tab.active { color: #0f3460; border-bottom-color: #0f3460; }
+
+  /* ── Section ── */
+  .section { display: none; padding: 48px; }
+  .section.active { display: block; }
+  .section-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+  }
+  .section-desc {
+    color: #64748b;
+    font-size: 14px;
+    margin-bottom: 36px;
+  }
+
+  /* ── Flow Diagram ── */
+  .flow-container {
+    background: white;
+    border-radius: 16px;
+    padding: 36px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+    overflow-x: auto;
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 0;
+    flex-wrap: nowrap;
+    min-width: max-content;
+  }
+
+  .flow-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* Node styles */
+  .node {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: default;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .node:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important; }
+
+  .node-start, .node-end {
+    width: 100px; height: 40px;
+    border-radius: 20px;
+    color: white;
+    font-size: 12px;
+  }
+  .node-start { background: #10b981; box-shadow: 0 2px 8px rgba(16,185,129,0.4); }
+  .node-end { background: #ef4444; box-shadow: 0 2px 8px rgba(239,68,68,0.4); }
+
+  .node-screen {
+    width: 130px; height: 56px;
+    border-radius: 10px;
+    color: white;
+    font-size: 11px;
+    padding: 8px;
+    line-height: 1.3;
+  }
+
+  .node-decision {
+    width: 110px; height: 110px;
+    transform: rotate(45deg);
+    border-radius: 10px;
+    font-size: 10px;
+  }
+  .node-decision .label {
+    transform: rotate(-45deg);
+    width: 100px;
+    text-align: center;
+    line-height: 1.3;
+    padding: 4px;
+  }
+
+  .node-action {
+    width: 130px; height: 48px;
+    border-radius: 8px;
+    color: #1a1a2e;
+    font-size: 11px;
+    padding: 8px;
+    line-height: 1.3;
+    border: 2px solid;
+  }
+
+  /* Color themes */
+  .creator .node-screen { background: linear-gradient(135deg, #6366f1, #4f46e5); box-shadow: 0 2px 8px rgba(99,102,241,0.3); }
+  .creator .node-decision { background: linear-gradient(135deg, #8b5cf6, #7c3aed); box-shadow: 0 2px 8px rgba(139,92,246,0.3); color: white; }
+  .creator .node-action { background: #f5f3ff; border-color: #8b5cf6; color: #5b21b6; }
+
+  .taker .node-screen { background: linear-gradient(135deg, #0ea5e9, #0284c7); box-shadow: 0 2px 8px rgba(14,165,233,0.3); }
+  .taker .node-decision { background: linear-gradient(135deg, #06b6d4, #0891b2); box-shadow: 0 2px 8px rgba(6,182,212,0.3); color: white; }
+  .taker .node-action { background: #f0f9ff; border-color: #0ea5e9; color: #075985; }
+
+  .results .node-screen { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 2px 8px rgba(245,158,11,0.3); }
+  .results .node-decision { background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 2px 8px rgba(249,115,22,0.3); color: white; }
+  .results .node-action { background: #fff7ed; border-color: #f59e0b; color: #92400e; }
+
+  /* Arrows */
+  .arrow-h, .arrow-v, .arrow-diag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 18px;
+    font-weight: 300;
+    flex-shrink: 0;
+  }
+  .arrow-h { width: 36px; }
+  .arrow-v { height: 32px; flex-direction: column; }
+  .arrow-h::before { content: ''; width: 24px; height: 2px; background: #cbd5e1; }
+  .arrow-h::after { content: '▶'; font-size: 10px; color: #cbd5e1; margin-left: -4px; }
+  .arrow-v::before { content: ''; width: 2px; height: 20px; background: #cbd5e1; }
+  .arrow-v::after { content: '▼'; font-size: 10px; color: #cbd5e1; margin-top: -4px; }
+
+  .arrow-label {
+    font-size: 10px;
+    color: #94a3b8;
+    font-weight: 500;
+    white-space: nowrap;
+    margin: 0 4px;
+  }
+
+  /* Branch */
+  .branch-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .branches {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+  }
+
+  .branch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #64748b;
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+  }
+
+  /* ── Journey Map ── */
+  .journey-map {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+    margin-bottom: 32px;
+  }
+  .journey-header {
+    padding: 24px 32px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .journey-header .persona {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .journey-header h3 { font-size: 18px; font-weight: 700; }
+  .journey-header p { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+
+  .creator-gradient { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
+  .taker-gradient { background: linear-gradient(135deg, #0284c7, #0891b2); }
+
+  .journey-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .journey-table th {
+    background: #f8fafc;
+    padding: 14px 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .journey-table td {
+    padding: 16px 20px;
+    font-size: 13px;
+    vertical-align: top;
+    border-bottom: 1px solid #f1f5f9;
+    border-right: 1px solid #f1f5f9;
+  }
+  .journey-table tr:last-child td { border-bottom: none; }
+  .journey-table td:last-child { border-right: none; }
+  .journey-table .row-label {
+    font-weight: 600;
+    color: #374151;
+    white-space: nowrap;
+    background: #fafafa;
+    width: 120px;
+  }
+  .journey-table .stage-header {
+    font-weight: 700;
+    color: #1a1a2e;
+    font-size: 13px;
+    text-align: center;
+    border-right: 1px solid #e2e8f0 !important;
+  }
+
+  /* Emotion bar */
+  .emotion-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .emotion-icon { font-size: 18px; }
+  .emotion-label { font-size: 11px; color: #64748b; }
+  .emotion-track {
+    flex: 1;
+    height: 6px;
+    background: #f1f5f9;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .emotion-fill { height: 100%; border-radius: 3px; }
+
+  /* Pain/gain pills */
+  .pill-list { display: flex; flex-direction: column; gap: 4px; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .pill-pain { background: #fef2f2; color: #b91c1c; }
+  .pill-gain { background: #f0fdf4; color: #15803d; }
+  .pill-opp { background: #eff6ff; color: #1d4ed8; }
+
+  /* Touchpoint tags */
+  .touchpoint {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #f1f5f9;
+    color: #475569;
+    border-radius: 4px;
+    font-size: 11px;
+    margin: 2px 2px 2px 0;
+  }
+
+  /* Action items */
+  .action-item {
+    font-size: 12px;
+    color: #374151;
+    line-height: 1.5;
+    padding-left: 12px;
+    position: relative;
+  }
+  .action-item::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: #94a3b8;
+  }
+
+  /* ── Flowchart SVG layout ── */
+  .svg-flow { width: 100%; overflow-x: auto; }
+
+  /* ── Step cards layout ── */
+  .steps-flow {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .step-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 140px;
+  }
+
+  .step-card {
+    width: 130px;
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+    position: relative;
+  }
+  .step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 8px;
+  }
+  .step-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+  .step-desc {
+    font-size: 10px;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.4;
+  }
+
+  .step-connector {
+    display: flex;
+    align-items: center;
+    padding-top: 30px;
+    flex-shrink: 0;
+  }
+  .step-connector svg { width: 40px; height: 20px; }
+
+  .step-branch {
+    background: white;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 8px;
+    width: 130px;
+    border: 1px solid #e2e8f0;
+  }
+  .branch-yes { border-left: 3px solid #10b981; }
+  .branch-no { border-left: 3px solid #f59e0b; }
+  .branch-label { font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+  .branch-yes .branch-label { color: #10b981; }
+  .branch-no .branch-label { color: #f59e0b; }
+  .branch-content { font-size: 10px; color: #64748b; line-height: 1.4; }
+
+  /* Decision diamond */
+  .diamond-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 140px;
+  }
+  .diamond {
+    width: 80px; height: 80px;
+    transform: rotate(45deg);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 20px 0;
+  }
+  .diamond-text {
+    transform: rotate(-45deg);
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    width: 70px;
+    line-height: 1.3;
+  }
+
+  /* ── Overview cards ── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+  .overview-card {
+    background: white;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .overview-card .icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+  .overview-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .overview-card p { font-size: 13px; color: #64748b; line-height: 1.5; }
+  .overview-card .steps-count {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* Inline flow with SVG */
+  .flow-svg-container {
+    width: 100%;
+    min-height: 200px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>QuizBuilder — User Flows & Journey Maps</h1>
+  <p>End-to-end experience design covering all user roles and interactions</p>
+  <div class="meta">
+    <span class="badge">👩‍🏫 Quiz Creator</span>
+    <span class="badge">🎓 Quiz Taker</span>
+    <span class="badge">📊 Results & Review</span>
+    <span class="badge">3 User Journeys</span>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="nav-tab active" onclick="showTab('overview')">Overview</div>
+  <div class="nav-tab" onclick="showTab('creator-flow')">Creator Flow</div>
+  <div class="nav-tab" onclick="showTab('taker-flow')">Taker Flow</div>
+  <div class="nav-tab" onclick="showTab('results-flow')">Results Flow</div>
+  <div class="nav-tab" onclick="showTab('journeys')">Journey Maps</div>
+</div>
+
+<!-- ══════════════════════════════════════════════ OVERVIEW ══ -->
+<div id="overview" class="section active">
+  <div class="section-title">System Overview</div>
+  <div class="section-desc">Three primary flows covering the full lifecycle of a quiz — from creation to analysis.</div>
+
+  <div class="overview-grid">
+    <div class="overview-card">
+      <div class="icon" style="background:#ede9fe;">👩‍🏫</div>
+      <h3>Quiz Creator</h3>
+      <p>Teacher or admin who designs, configures, and publishes quizzes. Manages question bank, sets rules, and reviews aggregate performance.</p>
+      <span class="steps-count" style="background:#ede9fe;color:#5b21b6;">9 steps · 3 decision points</span>
+    </div>
+    <div class="overview-card">
+      <div class="icon" style="background:#e0f2fe;">🎓</div>
+      <h3>Quiz Taker</h3>
+      <p>Student or participant who receives a quiz link, reads instructions, attempts questions, and submits for scoring.</p>
+      <span class="steps-count" style="background:#e0f2fe;color:#075985;">8 steps · 2 decision points</span>
+    </div>
+    <div class="overview-card">
+      <div class="icon" style="background:#fff7ed;">📊</div>
+      <h3>Results & Review</h3>
+      <p>Post-submission flow covering score display, answer review, certificate generation, and retake options for both roles.</p>
+      <span class="steps-count" style="background:#fff7ed;color:#92400e;">7 steps · 3 decision points</span>
+    </div>
+  </div>
+
+  <!-- System architecture overview -->
+  <div class="flow-container">
+    <div style="font-weight:700;font-size:16px;margin-bottom:24px;color:#1a1a2e;">System Architecture — High Level Flow</div>
+    <svg viewBox="0 0 1100 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:1100px;">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8"/>
+        </marker>
+        <marker id="arr-green" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#10b981"/>
+        </marker>
+      </defs>
+
+      <!-- Creator column -->
+      <rect x="20" y="20" width="140" height="48" rx="10" fill="#4f46e5"/>
+      <text x="90" y="40" text-anchor="middle" fill="white" font-size="11" font-weight="700">Dashboard</text>
+      <text x="90" y="55" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Creator Home</text>
+
+      <line x1="160" y1="44" x2="200" y2="44" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <rect x="200" y="20" width="140" height="48" rx="10" fill="#6366f1"/>
+      <text x="270" y="40" text-anchor="middle" fill="white" font-size="11" font-weight="700">Build Quiz</text>
+      <text x="270" y="55" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Questions &amp; Settings</text>
+
+      <line x1="340" y1="44" x2="380" y2="44" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <rect x="380" y="20" width="140" height="48" rx="10" fill="#7c3aed"/>
+      <text x="450" y="40" text-anchor="middle" fill="white" font-size="11" font-weight="700">Preview &amp; Publish</text>
+      <text x="450" y="55" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Share Link / Embed</text>
+
+      <!-- Quiz in DB - center -->
+      <rect x="490" y="140" width="160" height="56" rx="28" fill="#1e293b"/>
+      <text x="570" y="163" text-anchor="middle" fill="white" font-size="11" font-weight="700">QuizBuilder</text>
+      <text x="570" y="179" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="10">Database &amp; Engine</text>
+
+      <!-- Arrow from Publish to DB -->
+      <line x1="450" y1="68" x2="520" y2="140" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+      <!-- Taker column -->
+      <rect x="560" y="20" width="140" height="48" rx="10" fill="#0284c7"/>
+      <text x="630" y="40" text-anchor="middle" fill="white" font-size="11" font-weight="700">Receive Link</text>
+      <text x="630" y="55" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Email / Share</text>
+
+      <line x1="700" y1="44" x2="740" y2="44" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <rect x="740" y="20" width="140" height="48" rx="10" fill="#0ea5e9"/>
+      <text x="810" y="40" text-anchor="middle" fill="white" font-size="11" font-weight="700">Attempt Quiz</text>
+      <text x="810" y="55" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Answer Questions</text>
+
+      <line x1="880" y1="44" x2="920" y2="44" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <rect x="920" y="20" width="140" height="48" rx="10" fill="#06b6d4"/>
+      <text x="990" y="40" text-anchor="middle" fill="white" font-size="11" font-weight="700">Submit</text>
+      <text x="990" y="55" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Auto-graded</text>
+
+      <!-- Arrow from DB to Link -->
+      <line x1="620" y1="140" x2="630" y2="68" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+      <!-- Results row -->
+      <rect x="200" y="240" width="140" height="48" rx="10" fill="#d97706"/>
+      <text x="270" y="260" text-anchor="middle" fill="white" font-size="11" font-weight="700">Score &amp; Results</text>
+      <text x="270" y="275" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Instant Feedback</text>
+
+      <line x1="340" y1="264" x2="380" y2="264" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <rect x="380" y="240" width="140" height="48" rx="10" fill="#f59e0b"/>
+      <text x="450" y="260" text-anchor="middle" fill="white" font-size="11" font-weight="700">Answer Review</text>
+      <text x="450" y="275" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Correct / Wrong</text>
+
+      <line x1="520" y1="264" x2="560" y2="264" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <rect x="560" y="240" width="140" height="48" rx="10" fill="#f97316"/>
+      <text x="630" y="260" text-anchor="middle" fill="white" font-size="11" font-weight="700">Certificate</text>
+      <text x="630" y="275" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Pass / Download</text>
+
+      <line x1="700" y1="264" x2="740" y2="264" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <rect x="740" y="240" width="140" height="48" rx="10" fill="#ef4444"/>
+      <text x="810" y="260" text-anchor="middle" fill="white" font-size="11" font-weight="700">Analytics</text>
+      <text x="810" y="275" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Creator Dashboard</text>
+
+      <!-- Arrow from DB to Results -->
+      <line x1="570" y1="196" x2="400" y2="240" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+      <!-- Arrow from Submit to Results -->
+      <line x1="990" y1="68" x2="810" y2="240" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+      <!-- Labels -->
+      <text x="90" y="14" text-anchor="middle" fill="#4f46e5" font-size="11" font-weight="700">CREATOR ROLE</text>
+      <text x="790" y="14" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="700">TAKER ROLE</text>
+      <text x="570" y="234" text-anchor="middle" fill="#d97706" font-size="11" font-weight="700">RESULTS FLOW</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ CREATOR FLOW ══ -->
+<div id="creator-flow" class="section">
+  <div class="section-title">Quiz Creator Flow</div>
+  <div class="section-desc">Step-by-step path a teacher or admin follows to build, configure, and publish a quiz.</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4f46e5;"></div> Screen / Page</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6;border-radius:2px;transform:rotate(45deg);"></div> Decision Point</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#10b981;border-radius:6px;"></div> Start</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ef4444;border-radius:6px;"></div> End</div>
+  </div>
+
+  <div class="flow-container creator">
+    <svg viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:1200px;">
+      <defs>
+        <marker id="a1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#94a3b8"/></marker>
+        <marker id="a-green" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#10b981"/></marker>
+        <marker id="a-red" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#ef4444"/></marker>
+        <marker id="a-amber" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#f59e0b"/></marker>
+      </defs>
+
+      <!-- START -->
+      <rect x="30" y="50" width="100" height="36" rx="18" fill="#10b981"/>
+      <text x="80" y="73" text-anchor="middle" fill="white" font-size="11" font-weight="700">START</text>
+
+      <!-- Arrow -->
+      <line x1="130" y1="68" x2="170" y2="68" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- 1: Login / Dashboard -->
+      <rect x="170" y="44" width="120" height="48" rx="10" fill="#4f46e5"/>
+      <text x="230" y="64" text-anchor="middle" fill="white" font-size="11" font-weight="700">Login /</text>
+      <text x="230" y="79" text-anchor="middle" fill="white" font-size="11" font-weight="700">Dashboard</text>
+
+      <!-- Arrow -->
+      <line x1="290" y1="68" x2="330" y2="68" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- 2: Create New Quiz -->
+      <rect x="330" y="44" width="120" height="48" rx="10" fill="#4f46e5"/>
+      <text x="390" y="64" text-anchor="middle" fill="white" font-size="11" font-weight="700">Create New</text>
+      <text x="390" y="79" text-anchor="middle" fill="white" font-size="11" font-weight="700">Quiz</text>
+
+      <!-- Arrow -->
+      <line x1="450" y1="68" x2="490" y2="68" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- 3: Quiz Setup -->
+      <rect x="490" y="44" width="120" height="48" rx="10" fill="#6366f1"/>
+      <text x="550" y="64" text-anchor="middle" fill="white" font-size="11" font-weight="700">Quiz Setup</text>
+      <text x="550" y="79" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Title, Desc, Settings</text>
+
+      <!-- Arrow -->
+      <line x1="610" y1="68" x2="650" y2="68" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- 4: Add Questions -->
+      <rect x="650" y="44" width="120" height="48" rx="10" fill="#6366f1"/>
+      <text x="710" y="64" text-anchor="middle" fill="white" font-size="11" font-weight="700">Add</text>
+      <text x="710" y="79" text-anchor="middle" fill="white" font-size="11" font-weight="700">Questions</text>
+
+      <!-- Arrow down from Add Questions -->
+      <line x1="710" y1="92" x2="710" y2="130" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- Question Type Sub-flow -->
+      <text x="710" y="120" text-anchor="middle" fill="#64748b" font-size="10">Choose type</text>
+
+      <!-- Q-type nodes -->
+      <rect x="590" y="140" width="90" height="36" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="635" y="163" text-anchor="middle" fill="#4338ca" font-size="10" font-weight="600">MCQ</text>
+
+      <rect x="695" y="140" width="90" height="36" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="740" y="163" text-anchor="middle" fill="#4338ca" font-size="10" font-weight="600">True / False</text>
+
+      <rect x="800" y="140" width="90" height="36" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="845" y="163" text-anchor="middle" fill="#4338ca" font-size="10" font-weight="600">Short Answer</text>
+
+      <!-- Arrows to Q types -->
+      <line x1="710" y1="130" x2="635" y2="140" stroke="#94a3b8" stroke-width="1.2"/>
+      <line x1="710" y1="130" x2="740" y2="140" stroke="#94a3b8" stroke-width="1.2"/>
+      <line x1="710" y1="130" x2="845" y2="140" stroke="#94a3b8" stroke-width="1.2"/>
+
+      <!-- Q types merge back -->
+      <line x1="635" y1="176" x2="635" y2="210" stroke="#94a3b8" stroke-width="1.2"/>
+      <line x1="740" y1="176" x2="740" y2="210" stroke="#94a3b8" stroke-width="1.2"/>
+      <line x1="845" y1="176" x2="845" y2="210" stroke="#94a3b8" stroke-width="1.2"/>
+      <line x1="635" y1="210" x2="845" y2="210" stroke="#94a3b8" stroke-width="1.2"/>
+
+      <!-- Decision: More questions? -->
+      <polygon points="740,220 790,260 740,300 690,260" fill="#8b5cf6"/>
+      <text x="740" y="256" text-anchor="middle" fill="white" font-size="10" font-weight="700">Add More</text>
+      <text x="740" y="270" text-anchor="middle" fill="white" font-size="10" font-weight="700">Questions?</text>
+
+      <line x1="740" y1="210" x2="740" y2="220" stroke="#94a3b8" stroke-width="1.5"/>
+
+      <!-- Yes → loop back -->
+      <line x1="690" y1="260" x2="580" y2="260" stroke="#10b981" stroke-width="1.5" marker-end="url(#a-green)"/>
+      <text x="635" y="252" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Yes</text>
+      <line x1="580" y1="260" x2="580" y2="68" stroke="#10b981" stroke-width="1.5"/>
+      <line x1="580" y1="68" x2="650" y2="68" stroke="#10b981" stroke-width="1.5" marker-end="url(#a-green)"/>
+
+      <!-- No → preview -->
+      <line x1="790" y1="260" x2="860" y2="260" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text x="822" y="252" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="600">No</text>
+
+      <!-- 5: Preview Quiz -->
+      <rect x="860" y="236" width="120" height="48" rx="10" fill="#7c3aed"/>
+      <text x="920" y="256" text-anchor="middle" fill="white" font-size="11" font-weight="700">Preview</text>
+      <text x="920" y="271" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Review Quiz</text>
+
+      <!-- Arrow down from preview -->
+      <line x1="920" y1="284" x2="920" y2="320" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- Decision: Satisfied? -->
+      <polygon points="920,320 970,360 920,400 870,360" fill="#8b5cf6"/>
+      <text x="920" y="356" text-anchor="middle" fill="white" font-size="10" font-weight="700">Happy with</text>
+      <text x="920" y="370" text-anchor="middle" fill="white" font-size="10" font-weight="700">quiz?</text>
+
+      <!-- No → edit -->
+      <line x1="870" y1="360" x2="800" y2="360" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#a-amber)"/>
+      <text x="835" y="352" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">No</text>
+      <line x1="800" y1="360" x2="800" y2="68" stroke="#f59e0b" stroke-width="1.5"/>
+      <line x1="800" y1="68" x2="770" y2="68" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#a-amber)"/>
+
+      <!-- Yes → Publish -->
+      <line x1="920" y1="400" x2="920" y2="430" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text x="932" y="420" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Yes</text>
+
+      <!-- 6: Configure Sharing -->
+      <rect x="860" y="430" width="120" height="48" rx="10" fill="#4f46e5"/>
+      <text x="920" y="450" text-anchor="middle" fill="white" font-size="11" font-weight="700">Configure</text>
+      <text x="920" y="465" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Time, Attempts, Access</text>
+
+      <!-- Arrow -->
+      <line x1="860" y1="454" x2="820" y2="454" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- 7: Publish + Share -->
+      <rect x="700" y="430" width="120" height="48" rx="10" fill="#10b981"/>
+      <text x="760" y="450" text-anchor="middle" fill="white" font-size="11" font-weight="700">Publish &amp;</text>
+      <text x="760" y="465" text-anchor="middle" fill="white" font-size="11" font-weight="700">Share</text>
+
+      <!-- Arrow -->
+      <line x1="700" y1="454" x2="660" y2="454" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- 8: Monitor Responses -->
+      <rect x="540" y="430" width="120" height="48" rx="10" fill="#6366f1"/>
+      <text x="600" y="450" text-anchor="middle" fill="white" font-size="11" font-weight="700">Monitor</text>
+      <text x="600" y="465" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Responses Live</text>
+
+      <!-- Arrow -->
+      <line x1="540" y1="454" x2="500" y2="454" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- 9: Analytics -->
+      <rect x="380" y="430" width="120" height="48" rx="10" fill="#7c3aed"/>
+      <text x="440" y="450" text-anchor="middle" fill="white" font-size="11" font-weight="700">Analytics &amp;</text>
+      <text x="440" y="465" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Reports</text>
+
+      <!-- END -->
+      <line x1="380" y1="454" x2="340" y2="454" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#a1)"/>
+      <rect x="240" y="436" width="100" height="36" rx="18" fill="#ef4444"/>
+      <text x="290" y="459" text-anchor="middle" fill="white" font-size="11" font-weight="700">END</text>
+
+      <!-- Step labels -->
+      <text x="230" y="104" text-anchor="middle" fill="#6366f1" font-size="9" font-weight="600">①</text>
+      <text x="390" y="104" text-anchor="middle" fill="#6366f1" font-size="9" font-weight="600">②</text>
+      <text x="550" y="104" text-anchor="middle" fill="#6366f1" font-size="9" font-weight="600">③</text>
+      <text x="710" y="104" text-anchor="middle" fill="#6366f1" font-size="9" font-weight="600">④</text>
+      <text x="920" y="228" text-anchor="middle" fill="#6366f1" font-size="9" font-weight="600">⑤</text>
+      <text x="920" y="490" text-anchor="middle" fill="#6366f1" font-size="9" font-weight="600">⑥</text>
+      <text x="760" y="490" text-anchor="middle" fill="#6366f1" font-size="9" font-weight="600">⑦</text>
+      <text x="600" y="490" text-anchor="middle" fill="#6366f1" font-size="9" font-weight="600">⑧</text>
+      <text x="440" y="490" text-anchor="middle" fill="#6366f1" font-size="9" font-weight="600">⑨</text>
+    </svg>
+  </div>
+
+  <!-- Step descriptions -->
+  <div style="margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #4f46e5;">
+      <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:6px;">① LOGIN / DASHBOARD</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Creator logs in and sees their quiz library with draft, active, and archived quizzes.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #4f46e5;">
+      <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:6px;">② CREATE NEW QUIZ</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Clicks "New Quiz" — can start from scratch or pick a template from the library.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #4f46e5;">
+      <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:6px;">③ QUIZ SETUP</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Sets title, description, category, time limit, passing score, and randomization options.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #6366f1;">
+      <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:6px;">④ ADD QUESTIONS</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Adds MCQ, True/False, or Short Answer questions. Can reorder, duplicate, or delete. Loop until satisfied.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #7c3aed;">
+      <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:6px;">⑤ PREVIEW QUIZ</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Takes the quiz as a taker would see it. Decision: satisfied → publish, or go back to edit.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #4f46e5;">
+      <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:6px;">⑥ CONFIGURE SHARING</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Sets attempt limit, start/end date, password protection, and public vs invite-only access.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #10b981;">
+      <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:6px;">⑦ PUBLISH & SHARE</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Gets shareable link, embed code, or QR code. Can share directly via email to a group.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #6366f1;">
+      <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:6px;">⑧ MONITOR RESPONSES</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Real-time view of submissions, completion rate, and live attempt count.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #7c3aed;">
+      <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:6px;">⑨ ANALYTICS & REPORTS</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Score distribution, question-level analysis, export to CSV/PDF, and comparative performance.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ TAKER FLOW ══ -->
+<div id="taker-flow" class="section">
+  <div class="section-title">Quiz Taker Flow</div>
+  <div class="section-desc">The path a student or participant follows from receiving a quiz link to submitting their answers.</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#0284c7;"></div> Screen / Page</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0ea5e9;border-radius:2px;transform:rotate(45deg);"></div> Decision Point</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#10b981;border-radius:6px;"></div> Start</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ef4444;border-radius:6px;"></div> End</div>
+  </div>
+
+  <div class="flow-container taker">
+    <svg viewBox="0 0 1100 500" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:1100px;">
+      <defs>
+        <marker id="t1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#94a3b8"/></marker>
+        <marker id="t-green" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#10b981"/></marker>
+        <marker id="t-amber" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#f59e0b"/></marker>
+        <marker id="t-red" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#ef4444"/></marker>
+      </defs>
+
+      <!-- START -->
+      <rect x="20" y="50" width="100" height="36" rx="18" fill="#10b981"/>
+      <text x="70" y="73" text-anchor="middle" fill="white" font-size="11" font-weight="700">START</text>
+
+      <line x1="120" y1="68" x2="160" y2="68" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#t1)"/>
+
+      <!-- 1: Receive Link -->
+      <rect x="160" y="44" width="120" height="48" rx="10" fill="#0284c7"/>
+      <text x="220" y="64" text-anchor="middle" fill="white" font-size="11" font-weight="700">Receive</text>
+      <text x="220" y="79" text-anchor="middle" fill="white" font-size="11" font-weight="700">Link</text>
+
+      <line x1="280" y1="68" x2="320" y2="68" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#t1)"/>
+
+      <!-- Decision: Auth required? -->
+      <polygon points="370,68 420,108 370,148 320,108" fill="#0891b2"/>
+      <text x="370" y="104" text-anchor="middle" fill="white" font-size="10" font-weight="700">Login</text>
+      <text x="370" y="118" text-anchor="middle" fill="white" font-size="10" font-weight="700">Required?</text>
+
+      <!-- No → Quiz Intro -->
+      <line x1="420" y1="108" x2="480" y2="108" stroke="#10b981" stroke-width="1.5" marker-end="url(#t-green)"/>
+      <text x="452" y="100" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">No</text>
+
+      <!-- Yes → Login -->
+      <line x1="370" y1="148" x2="370" y2="190" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="382" y="173" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">Yes</text>
+      <rect x="310" y="190" width="120" height="40" rx="8" fill="#bae6fd" stroke="#0284c7" stroke-width="1.5"/>
+      <text x="370" y="215" text-anchor="middle" fill="#075985" font-size="11" font-weight="600">Log In / Sign Up</text>
+      <line x1="430" y1="210" x2="520" y2="120" stroke="#0284c7" stroke-width="1.5" marker-end="url(#t1)"/>
+
+      <!-- 2: Quiz Intro -->
+      <rect x="480" y="84" width="120" height="48" rx="10" fill="#0284c7"/>
+      <text x="540" y="104" text-anchor="middle" fill="white" font-size="11" font-weight="700">Quiz Intro</text>
+      <text x="540" y="119" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Title, Rules, Timer</text>
+
+      <line x1="600" y1="108" x2="640" y2="108" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#t1)"/>
+
+      <!-- Decision: Password? -->
+      <polygon points="690,108 740,148 690,188 640,148" fill="#0891b2"/>
+      <text x="690" y="144" text-anchor="middle" fill="white" font-size="10" font-weight="700">Password</text>
+      <text x="690" y="158" text-anchor="middle" fill="white" font-size="10" font-weight="700">Protected?</text>
+
+      <!-- No → Start Quiz -->
+      <line x1="740" y1="148" x2="800" y2="148" stroke="#10b981" stroke-width="1.5" marker-end="url(#t-green)"/>
+      <text x="772" y="140" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">No</text>
+
+      <!-- Yes → Enter Pass -->
+      <line x1="690" y1="188" x2="690" y2="230" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="702" y="213" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">Yes</text>
+      <rect x="630" y="230" width="120" height="36" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="690" y="253" text-anchor="middle" fill="#92400e" font-size="11" font-weight="600">Enter Password</text>
+      <line x1="750" y1="248" x2="860" y2="170" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#t-amber)"/>
+
+      <!-- 3: Attempt Questions -->
+      <rect x="800" y="124" width="120" height="48" rx="10" fill="#0ea5e9"/>
+      <text x="860" y="144" text-anchor="middle" fill="white" font-size="11" font-weight="700">Attempt</text>
+      <text x="860" y="159" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Answer Questions</text>
+
+      <!-- Timer runs out path -->
+      <line x1="860" y1="172" x2="860" y2="230" stroke="#94a3b8" stroke-width="1.5"/>
+
+      <!-- Navigation mini-flow below -->
+      <rect x="780" y="230" width="80" height="32" rx="6" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="1"/>
+      <text x="820" y="250" text-anchor="middle" fill="#075985" font-size="10" font-weight="600">Prev / Next</text>
+
+      <rect x="880" y="230" width="80" height="32" rx="6" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="1"/>
+      <text x="920" y="250" text-anchor="middle" fill="#075985" font-size="10" font-weight="600">Flag Q for Later</text>
+
+      <line x1="860" y1="230" x2="820" y2="230" stroke="#94a3b8" stroke-width="1"/>
+      <line x1="860" y1="230" x2="920" y2="230" stroke="#94a3b8" stroke-width="1"/>
+
+      <line x1="820" y1="262" x2="820" y2="290" stroke="#94a3b8" stroke-width="1.2"/>
+      <line x1="920" y1="262" x2="920" y2="290" stroke="#94a3b8" stroke-width="1.2"/>
+      <line x1="820" y1="290" x2="920" y2="290" stroke="#94a3b8" stroke-width="1.2"/>
+      <line x1="870" y1="290" x2="870" y2="320" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#t1)"/>
+
+      <!-- 4: Review before submit -->
+      <rect x="810" y="320" width="120" height="48" rx="10" fill="#0284c7"/>
+      <text x="870" y="340" text-anchor="middle" fill="white" font-size="11" font-weight="700">Review</text>
+      <text x="870" y="355" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">All Questions</text>
+
+      <line x1="870" y1="368" x2="870" y2="405" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#t1)"/>
+
+      <!-- Decision: Timer expired? -->
+      <polygon points="870,405 920,445 870,485 820,445" fill="#06b6d4"/>
+      <text x="870" y="441" text-anchor="middle" fill="white" font-size="10" font-weight="700">Submit /</text>
+      <text x="870" y="455" text-anchor="middle" fill="white" font-size="10" font-weight="700">Timer End?</text>
+
+      <!-- Submit → Results -->
+      <line x1="820" y1="445" x2="700" y2="445" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#t1)"/>
+      <text x="760" y="437" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">Submit</text>
+
+      <!-- 5: Submitted -->
+      <rect x="580" y="421" width="120" height="48" rx="10" fill="#06b6d4"/>
+      <text x="640" y="441" text-anchor="middle" fill="white" font-size="11" font-weight="700">Submitted!</text>
+      <text x="640" y="456" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Auto-Graded</text>
+
+      <!-- → Results -->
+      <line x1="580" y1="445" x2="520" y2="445" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#t1)"/>
+
+      <!-- END -->
+      <rect x="400" y="427" width="120" height="36" rx="18" fill="#ef4444"/>
+      <text x="460" y="450" text-anchor="middle" fill="white" font-size="11" font-weight="700">→ RESULTS FLOW</text>
+
+      <!-- Step numbers -->
+      <text x="220" y="104" text-anchor="middle" fill="#0284c7" font-size="10" font-weight="700">①</text>
+      <text x="540" y="145" text-anchor="middle" fill="#0284c7" font-size="10" font-weight="700">②</text>
+      <text x="860" y="115" text-anchor="middle" fill="#0ea5e9" font-size="10" font-weight="700">③</text>
+      <text x="870" y="316" text-anchor="middle" fill="#0284c7" font-size="10" font-weight="700">④</text>
+      <text x="640" y="415" text-anchor="middle" fill="#06b6d4" font-size="10" font-weight="700">⑤</text>
+    </svg>
+  </div>
+
+  <!-- Step descriptions -->
+  <div style="margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #0284c7;">
+      <div style="font-size:11px;color:#0284c7;font-weight:700;margin-bottom:6px;">① RECEIVE LINK</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Taker gets a link via email, message, or QR code. May need to log in if the quiz is restricted.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #0284c7;">
+      <div style="font-size:11px;color:#0284c7;font-weight:700;margin-bottom:6px;">② QUIZ INTRO SCREEN</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Sees quiz title, description, number of questions, time limit, and passing score before starting.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #0ea5e9;">
+      <div style="font-size:11px;color:#0284c7;font-weight:700;margin-bottom:6px;">③ ATTEMPT QUESTIONS</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Answers questions one at a time or all on one page. Can navigate forward/back and flag questions to revisit.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #0284c7;">
+      <div style="font-size:11px;color:#0284c7;font-weight:700;margin-bottom:6px;">④ REVIEW BEFORE SUBMIT</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Summary page shows answered vs unanswered and flagged questions before final submission.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #06b6d4;">
+      <div style="font-size:11px;color:#0284c7;font-weight:700;margin-bottom:6px;">⑤ SUBMIT & AUTO-GRADE</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">On submit (or timer expiry), answers are automatically graded and the taker proceeds to the Results flow.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #94a3b8;">
+      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:6px;">EDGE CASES</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Timer expiry auto-submits. Password-protected quizzes require a code. Attempt limits are enforced before starting.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ RESULTS FLOW ══ -->
+<div id="results-flow" class="section">
+  <div class="section-title">Results & Review Flow</div>
+  <div class="section-desc">Post-submission experience for the taker — plus the analytics view for the creator.</div>
+
+  <div class="flow-container results">
+    <svg viewBox="0 0 1050 480" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:1050px;">
+      <defs>
+        <marker id="r1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#94a3b8"/></marker>
+        <marker id="r-green" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#10b981"/></marker>
+        <marker id="r-red" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#ef4444"/></marker>
+        <marker id="r-amber" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#f59e0b"/></marker>
+      </defs>
+
+      <!-- FROM TAKER FLOW -->
+      <rect x="20" y="50" width="120" height="36" rx="18" fill="#06b6d4"/>
+      <text x="80" y="73" text-anchor="middle" fill="white" font-size="10" font-weight="700">FROM TAKER FLOW</text>
+
+      <line x1="140" y1="68" x2="180" y2="68" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#r1)"/>
+
+      <!-- 1: Score Summary -->
+      <rect x="180" y="44" width="120" height="48" rx="10" fill="#d97706"/>
+      <text x="240" y="64" text-anchor="middle" fill="white" font-size="11" font-weight="700">Score</text>
+      <text x="240" y="79" text-anchor="middle" fill="white" font-size="11" font-weight="700">Summary</text>
+
+      <line x1="300" y1="68" x2="340" y2="68" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#r1)"/>
+
+      <!-- Decision: Passed? -->
+      <polygon points="390,68 440,108 390,148 340,108" fill="#f97316"/>
+      <text x="390" y="104" text-anchor="middle" fill="white" font-size="10" font-weight="700">Passed</text>
+      <text x="390" y="118" text-anchor="middle" fill="white" font-size="10" font-weight="700">Quiz?</text>
+
+      <!-- YES → Certificate -->
+      <line x1="440" y1="108" x2="500" y2="108" stroke="#10b981" stroke-width="1.5" marker-end="url(#r-green)"/>
+      <text x="472" y="100" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Yes</text>
+
+      <!-- 2a: Certificate -->
+      <rect x="500" y="84" width="120" height="48" rx="10" fill="#f59e0b"/>
+      <text x="560" y="104" text-anchor="middle" fill="white" font-size="11" font-weight="700">Certificate</text>
+      <text x="560" y="119" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Download / Share</text>
+
+      <line x1="620" y1="108" x2="660" y2="108" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#r1)"/>
+
+      <!-- NO → Fail screen -->
+      <line x1="390" y1="148" x2="390" y2="200" stroke="#ef4444" stroke-width="1.5"/>
+      <text x="402" y="178" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="600">No</text>
+      <rect x="330" y="200" width="120" height="40" rx="8" fill="#fee2e2" stroke="#ef4444" stroke-width="1.5"/>
+      <text x="390" y="225" text-anchor="middle" fill="#b91c1c" font-size="11" font-weight="600">Try Again Prompt</text>
+
+      <!-- Decision: Retake allowed? -->
+      <line x1="390" y1="240" x2="390" y2="280" stroke="#94a3b8" stroke-width="1.5"/>
+      <polygon points="390,280 440,320 390,360 340,320" fill="#f97316"/>
+      <text x="390" y="316" text-anchor="middle" fill="white" font-size="10" font-weight="700">Retake</text>
+      <text x="390" y="330" text-anchor="middle" fill="white" font-size="10" font-weight="700">Allowed?</text>
+
+      <!-- Retake Yes -->
+      <line x1="340" y1="320" x2="260" y2="320" stroke="#10b981" stroke-width="1.5" marker-end="url(#r-green)"/>
+      <text x="300" y="312" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Yes</text>
+      <rect x="180" y="300" width="80" height="40" rx="8" fill="#dcfce7" stroke="#10b981" stroke-width="1.5"/>
+      <text x="220" y="325" text-anchor="middle" fill="#15803d" font-size="11" font-weight="600">Restart Quiz</text>
+      <line x1="220" y1="300" x2="220" y2="68" stroke="#10b981" stroke-width="1.2" stroke-dasharray="4,3"/>
+      <line x1="220" y1="68" x2="180" y2="68" stroke="#10b981" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#r-green)"/>
+
+      <!-- Retake No -->
+      <line x1="440" y1="320" x2="500" y2="320" stroke="#ef4444" stroke-width="1.5" marker-end="url(#r-red)"/>
+      <text x="472" y="312" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="600">No</text>
+      <rect x="500" y="296" width="120" height="48" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+      <text x="560" y="316" text-anchor="middle" fill="#b91c1c" font-size="11" font-weight="600">Final Score</text>
+      <text x="560" y="331" text-anchor="middle" fill="#b91c1c" font-size="10">No More Attempts</text>
+
+      <!-- 3: Review Answers (shared) -->
+      <rect x="660" y="84" width="120" height="48" rx="10" fill="#d97706"/>
+      <text x="720" y="104" text-anchor="middle" fill="white" font-size="11" font-weight="700">Review</text>
+      <text x="720" y="119" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">All Answers</text>
+
+      <line x1="780" y1="108" x2="820" y2="108" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#r1)"/>
+
+      <!-- Decision: Show answers? -->
+      <polygon points="870,108 920,148 870,188 820,148" fill="#f97316"/>
+      <text x="870" y="144" text-anchor="middle" fill="white" font-size="10" font-weight="700">Answers</text>
+      <text x="870" y="158" text-anchor="middle" fill="white" font-size="10" font-weight="700">Visible?</text>
+
+      <!-- Yes → Correct/Wrong -->
+      <line x1="920" y1="148" x2="980" y2="148" stroke="#10b981" stroke-width="1.5" marker-end="url(#r-green)"/>
+      <text x="952" y="140" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Yes</text>
+      <rect x="980" y="124" width="50" height="48" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="1.5"/>
+      <text x="1005" y="144" text-anchor="middle" fill="#15803d" font-size="10" font-weight="600">✓ / ✗</text>
+      <text x="1005" y="160" text-anchor="middle" fill="#15803d" font-size="9">+ Explain</text>
+
+      <!-- No → Score only -->
+      <line x1="870" y1="188" x2="870" y2="230" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#r-amber)"/>
+      <text x="882" y="213" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">No</text>
+      <rect x="810" y="230" width="120" height="36" rx="8" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="870" y="253" text-anchor="middle" fill="#92400e" font-size="11" font-weight="600">Score Only View</text>
+
+      <!-- Share Result -->
+      <line x1="1005" y1="172" x2="1005" y2="230" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#r1)"/>
+      <rect x="975" y="230" width="60" height="40" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+      <text x="1005" y="250" text-anchor="middle" fill="#475569" font-size="10" font-weight="600">Share</text>
+      <text x="1005" y="263" text-anchor="middle" fill="#64748b" font-size="9">Result</text>
+
+      <!-- CREATOR ANALYTICS branch -->
+      <line x1="720" y1="132" x2="720" y2="380" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="750" y="260" fill="#7c3aed" font-size="10" font-weight="600">Creator</text>
+      <text x="750" y="273" fill="#7c3aed" font-size="10" font-weight="600">View</text>
+      <rect x="650" y="380" width="140" height="48" rx="10" fill="#4f46e5"/>
+      <text x="720" y="400" text-anchor="middle" fill="white" font-size="11" font-weight="700">Analytics</text>
+      <text x="720" y="415" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Score Dist · Q Analysis</text>
+
+      <line x1="720" y1="428" x2="720" y2="460" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#r1)"/>
+      <rect x="660" y="460" width="120" height="36" rx="18" fill="#ef4444"/>
+      <text x="720" y="483" text-anchor="middle" fill="white" font-size="11" font-weight="700">END</text>
+
+      <!-- Step labels -->
+      <text x="240" y="38" text-anchor="middle" fill="#d97706" font-size="9" font-weight="700">①</text>
+      <text x="560" y="78" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="700">②</text>
+      <text x="720" y="78" text-anchor="middle" fill="#d97706" font-size="9" font-weight="700">③</text>
+    </svg>
+  </div>
+
+  <div style="margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #d97706;">
+      <div style="font-size:11px;color:#d97706;font-weight:700;margin-bottom:6px;">① SCORE SUMMARY</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Shows total score, percentage, pass/fail status, and time taken. Animated score reveal for engagement.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #f59e0b;">
+      <div style="font-size:11px;color:#d97706;font-weight:700;margin-bottom:6px;">② CERTIFICATE</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Auto-generated on pass. Taker can download as PDF or share to LinkedIn. Includes score, date, and quiz name.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #d97706;">
+      <div style="font-size:11px;color:#d97706;font-weight:700;margin-bottom:6px;">③ REVIEW ANSWERS</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Taker sees each question with their answer highlighted as correct/wrong. Explanations shown if creator enabled them.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #ef4444;">
+      <div style="font-size:11px;color:#d97706;font-weight:700;margin-bottom:6px;">FAILED PATH</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">If retake is allowed, taker restarts from the intro screen. If not, a "final score" screen is shown with study recommendations.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #4f46e5;">
+      <div style="font-size:11px;color:#4f46e5;font-weight:700;margin-bottom:6px;">CREATOR ANALYTICS</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Score distribution histogram, per-question difficulty, average completion time, and individual response drill-down.</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:16px;border-left:3px solid #94a3b8;">
+      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:6px;">CREATOR SETTINGS</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">Creator controls whether answers are visible after submission, and whether a retake is permitted and how many times.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ JOURNEY MAPS ══ -->
+<div id="journeys" class="section">
+  <div class="section-title">User Journey Maps</div>
+  <div class="section-desc">Emotional journey, touchpoints, pain points, and opportunities across key stages for each persona.</div>
+
+  <!-- Creator Journey -->
+  <div class="journey-map" style="margin-bottom:36px;">
+    <div class="journey-header creator-gradient">
+      <div class="persona">👩‍🏫</div>
+      <div>
+        <h3>Quiz Creator — Teacher / Instructor</h3>
+        <p>Goal: Build and publish an effective quiz that accurately measures student knowledge</p>
+      </div>
+    </div>
+    <table class="journey-table">
+      <thead>
+        <tr>
+          <th style="width:110px;">Row</th>
+          <th class="stage-header">1. Discovery</th>
+          <th class="stage-header">2. Onboarding</th>
+          <th class="stage-header">3. Creating</th>
+          <th class="stage-header">4. Publishing</th>
+          <th class="stage-header">5. Monitoring</th>
+          <th class="stage-header">6. Analyzing</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-label">Actions</td>
+          <td>
+            <div class="action-item">Searches for quiz tool online</div>
+            <div class="action-item">Reads reviews &amp; features</div>
+            <div class="action-item">Signs up for free trial</div>
+          </td>
+          <td>
+            <div class="action-item">Completes account setup</div>
+            <div class="action-item">Watches tutorial video</div>
+            <div class="action-item">Explores dashboard</div>
+          </td>
+          <td>
+            <div class="action-item">Creates new quiz</div>
+            <div class="action-item">Adds questions &amp; options</div>
+            <div class="action-item">Configures settings</div>
+            <div class="action-item">Previews quiz</div>
+          </td>
+          <td>
+            <div class="action-item">Sets access rules</div>
+            <div class="action-item">Copies shareable link</div>
+            <div class="action-item">Sends to students</div>
+          </td>
+          <td>
+            <div class="action-item">Checks live submission count</div>
+            <div class="action-item">Views completion rate</div>
+          </td>
+          <td>
+            <div class="action-item">Reviews score distribution</div>
+            <div class="action-item">Identifies hard questions</div>
+            <div class="action-item">Exports report</div>
+          </td>
+        </tr>
+        <tr>
+          <td class="row-label">Touchpoints</td>
+          <td>
+            <span class="touchpoint">Website</span>
+            <span class="touchpoint">Google Search</span>
+            <span class="touchpoint">Sign-up Page</span>
+          </td>
+          <td>
+            <span class="touchpoint">Welcome Email</span>
+            <span class="touchpoint">Dashboard</span>
+            <span class="touchpoint">Tutorial</span>
+          </td>
+          <td>
+            <span class="touchpoint">Quiz Editor</span>
+            <span class="touchpoint">Question Builder</span>
+            <span class="touchpoint">Settings Panel</span>
+            <span class="touchpoint">Preview Mode</span>
+          </td>
+          <td>
+            <span class="touchpoint">Share Dialog</span>
+            <span class="touchpoint">Email / LMS</span>
+          </td>
+          <td>
+            <span class="touchpoint">Monitor Dashboard</span>
+            <span class="touchpoint">Notifications</span>
+          </td>
+          <td>
+            <span class="touchpoint">Analytics Page</span>
+            <span class="touchpoint">CSV Export</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="row-label">Emotion</td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">🤔</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:50%;background:#94a3b8;"></div></div>
+              <span class="emotion-label">Curious</span>
+            </div>
+          </td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">😊</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:65%;background:#0ea5e9;"></div></div>
+              <span class="emotion-label">Hopeful</span>
+            </div>
+          </td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">😤</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:40%;background:#f59e0b;"></div></div>
+              <span class="emotion-label">Focused / Frustrated</span>
+            </div>
+          </td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">😌</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:75%;background:#6366f1;"></div></div>
+              <span class="emotion-label">Relieved</span>
+            </div>
+          </td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">😬</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:55%;background:#f97316;"></div></div>
+              <span class="emotion-label">Anxious / Hopeful</span>
+            </div>
+          </td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">🎯</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:85%;background:#10b981;"></div></div>
+              <span class="emotion-label">Satisfied</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="row-label">Pain Points</td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Hard to compare tools</span>
+              <span class="pill pill-pain">⚠ Free tier limits unclear</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Too many onboarding steps</span>
+              <span class="pill pill-pain">⚠ UI feels unfamiliar</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Reordering questions is clunky</span>
+              <span class="pill pill-pain">⚠ No bulk question import</span>
+              <span class="pill pill-pain">⚠ Preview doesn't match live</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Share options hard to find</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ No email notification on submit</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Export lacks formatting</span>
+              <span class="pill pill-pain">⚠ Can't filter by student group</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="row-label">Opportunities</td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 Clear feature comparison page</span>
+              <span class="pill pill-opp">💡 Free tier with no time limit</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 2-step quick-start wizard</span>
+              <span class="pill pill-opp">💡 Sample quiz on first login</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 Drag-and-drop reorder</span>
+              <span class="pill pill-opp">💡 Bulk import from CSV/DOCX</span>
+              <span class="pill pill-opp">💡 AI question suggestions</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 One-click copy link</span>
+              <span class="pill pill-opp">💡 LMS integration (Canvas, Moodle)</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 Email/push on each submission</span>
+              <span class="pill pill-opp">💡 Live response ticker</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 Cohort filter in analytics</span>
+              <span class="pill pill-opp">💡 Question difficulty flags</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Taker Journey -->
+  <div class="journey-map">
+    <div class="journey-header taker-gradient">
+      <div class="persona">🎓</div>
+      <div>
+        <h3>Quiz Taker — Student / Participant</h3>
+        <p>Goal: Complete the quiz confidently and understand how they performed</p>
+      </div>
+    </div>
+    <table class="journey-table">
+      <thead>
+        <tr>
+          <th style="width:110px;">Row</th>
+          <th class="stage-header">1. Receiving</th>
+          <th class="stage-header">2. Preparing</th>
+          <th class="stage-header">3. Attempting</th>
+          <th class="stage-header">4. Reviewing</th>
+          <th class="stage-header">5. Completing</th>
+          <th class="stage-header">6. Post-Quiz</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-label">Actions</td>
+          <td>
+            <div class="action-item">Receives link via email/message</div>
+            <div class="action-item">Clicks the quiz link</div>
+            <div class="action-item">Logs in (if required)</div>
+          </td>
+          <td>
+            <div class="action-item">Reads quiz intro &amp; rules</div>
+            <div class="action-item">Notes time limit</div>
+            <div class="action-item">Clicks "Start Quiz"</div>
+          </td>
+          <td>
+            <div class="action-item">Reads each question</div>
+            <div class="action-item">Selects / types answer</div>
+            <div class="action-item">Flags uncertain Qs</div>
+            <div class="action-item">Navigates prev/next</div>
+          </td>
+          <td>
+            <div class="action-item">Sees review summary</div>
+            <div class="action-item">Returns to flagged Qs</div>
+            <div class="action-item">Confirms submission</div>
+          </td>
+          <td>
+            <div class="action-item">Sees score &amp; pass/fail</div>
+            <div class="action-item">Reviews answer breakdown</div>
+          </td>
+          <td>
+            <div class="action-item">Downloads certificate (if pass)</div>
+            <div class="action-item">Shares result</div>
+            <div class="action-item">Reviews explanations</div>
+          </td>
+        </tr>
+        <tr>
+          <td class="row-label">Touchpoints</td>
+          <td>
+            <span class="touchpoint">Email / Chat</span>
+            <span class="touchpoint">Landing Page</span>
+            <span class="touchpoint">Login Screen</span>
+          </td>
+          <td>
+            <span class="touchpoint">Intro Screen</span>
+            <span class="touchpoint">Instructions Modal</span>
+          </td>
+          <td>
+            <span class="touchpoint">Question Page</span>
+            <span class="touchpoint">Timer Bar</span>
+            <span class="touchpoint">Progress Indicator</span>
+          </td>
+          <td>
+            <span class="touchpoint">Review Page</span>
+            <span class="touchpoint">Confirmation Dialog</span>
+          </td>
+          <td>
+            <span class="touchpoint">Results Screen</span>
+            <span class="touchpoint">Answer Review Page</span>
+          </td>
+          <td>
+            <span class="touchpoint">Certificate Page</span>
+            <span class="touchpoint">Share Modal</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="row-label">Emotion</td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">😐</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:45%;background:#94a3b8;"></div></div>
+              <span class="emotion-label">Neutral</span>
+            </div>
+          </td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">😰</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:35%;background:#f97316;"></div></div>
+              <span class="emotion-label">Nervous</span>
+            </div>
+          </td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">🧠</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:50%;background:#6366f1;"></div></div>
+              <span class="emotion-label">Focused / Tense</span>
+            </div>
+          </td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">😤</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:45%;background:#f59e0b;"></div></div>
+              <span class="emotion-label">Anxious</span>
+            </div>
+          </td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">😄</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:90%;background:#10b981;"></div></div>
+              <span class="emotion-label">Relieved / Happy (pass)</span>
+            </div>
+          </td>
+          <td>
+            <div class="emotion-bar">
+              <span class="emotion-icon">🏆</span>
+              <div class="emotion-track"><div class="emotion-fill" style="width:95%;background:#d97706;"></div></div>
+              <span class="emotion-label">Proud / Accomplished</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="row-label">Pain Points</td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Link expired or broken</span>
+              <span class="pill pill-pain">⚠ Forced to sign up</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Rules not clearly stated</span>
+              <span class="pill pill-pain">⚠ Can't know question count</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Timer is stressful &amp; prominent</span>
+              <span class="pill pill-pain">⚠ Can't go back to prev question</span>
+              <span class="pill pill-pain">⚠ No save progress</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Hard to identify unanswered</span>
+              <span class="pill pill-pain">⚠ Accidental submit</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Score with no context</span>
+              <span class="pill pill-pain">⚠ No explanation on wrong Qs</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-pain">⚠ Certificate hard to find</span>
+              <span class="pill pill-pain">⚠ No study recommendations</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="row-label">Opportunities</td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 Guest mode (no login)</span>
+              <span class="pill pill-opp">💡 Link validity indicator</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 Clear rules checklist</span>
+              <span class="pill pill-opp">💡 Show Q count &amp; duration est.</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 Subtle, non-alarming timer</span>
+              <span class="pill pill-opp">💡 Autosave every answer</span>
+              <span class="pill pill-opp">💡 Progress bar with Q map</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 Unanswered highlighted in red</span>
+              <span class="pill pill-opp">💡 Confirmation dialog before submit</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 Animated score reveal</span>
+              <span class="pill pill-opp">💡 Explanation per wrong answer</span>
+            </div>
+          </td>
+          <td>
+            <div class="pill-list">
+              <span class="pill pill-opp">💡 1-click certificate download</span>
+              <span class="pill pill-opp">💡 "Study these topics" suggestions</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Emotion curve SVG -->
+  <div class="flow-container" style="margin-top:32px;">
+    <div style="font-weight:700;font-size:16px;margin-bottom:20px;color:#1a1a2e;">Emotional Journey Curves</div>
+    <svg viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;">
+      <!-- Grid -->
+      <line x1="60" y1="20" x2="60" y2="180" stroke="#e2e8f0" stroke-width="1"/>
+      <line x1="60" y1="180" x2="880" y2="180" stroke="#e2e8f0" stroke-width="1"/>
+      <line x1="60" y1="100" x2="880" y2="100" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="4,3"/>
+
+      <!-- Y-axis labels -->
+      <text x="50" y="24" text-anchor="end" fill="#94a3b8" font-size="10">High</text>
+      <text x="50" y="184" text-anchor="end" fill="#94a3b8" font-size="10">Low</text>
+
+      <!-- X-axis stage labels -->
+      <text x="180" y="200" text-anchor="middle" fill="#64748b" font-size="10">Discovery</text>
+      <text x="320" y="200" text-anchor="middle" fill="#64748b" font-size="10">Onboarding</text>
+      <text x="460" y="200" text-anchor="middle" fill="#64748b" font-size="10">Creating</text>
+      <text x="600" y="200" text-anchor="middle" fill="#64748b" font-size="10">Publishing</text>
+      <text x="740" y="200" text-anchor="middle" fill="#64748b" font-size="10">Monitoring</text>
+      <text x="860" y="200" text-anchor="middle" fill="#64748b" font-size="10">Analyzing</text>
+
+      <!-- Creator curve (purple) -->
+      <polyline points="100,100 180,90 320,80 460,130 600,60 740,85 860,40"
+        fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Dots -->
+      <circle cx="100" cy="100" r="4" fill="#6366f1"/>
+      <circle cx="180" cy="90" r="4" fill="#6366f1"/>
+      <circle cx="320" cy="80" r="4" fill="#6366f1"/>
+      <circle cx="460" cy="130" r="4" fill="#6366f1"/>
+      <circle cx="600" cy="60" r="4" fill="#6366f1"/>
+      <circle cx="740" cy="85" r="4" fill="#6366f1"/>
+      <circle cx="860" cy="40" r="4" fill="#6366f1"/>
+
+      <!-- Taker curve (blue) — different stage mapping -->
+      <polyline points="100,110 180,130 320,140 460,120 600,110 740,50 860,45"
+        fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6,3"/>
+      <circle cx="100" cy="110" r="4" fill="#0ea5e9"/>
+      <circle cx="180" cy="130" r="4" fill="#0ea5e9"/>
+      <circle cx="320" cy="140" r="4" fill="#0ea5e9"/>
+      <circle cx="460" cy="120" r="4" fill="#0ea5e9"/>
+      <circle cx="600" cy="110" r="4" fill="#0ea5e9"/>
+      <circle cx="740" cy="50" r="4" fill="#0ea5e9"/>
+      <circle cx="860" cy="45" r="4" fill="#0ea5e9"/>
+
+      <!-- Legend -->
+      <line x1="650" y1="15" x2="680" y2="15" stroke="#6366f1" stroke-width="2.5"/>
+      <text x="685" y="19" fill="#6366f1" font-size="11" font-weight="600">Creator</text>
+      <line x1="730" y1="15" x2="760" y2="15" stroke="#0ea5e9" stroke-width="2.5" stroke-dasharray="6,3"/>
+      <text x="765" y="19" fill="#0ea5e9" font-size="11" font-weight="600">Taker</text>
+    </svg>
+  </div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
