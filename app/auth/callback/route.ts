@@ -25,9 +25,25 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      const response = NextResponse.redirect(`${origin}${next}`)
+
+      // Persist the Google OAuth provider_token in its own cookie so server
+      // API routes can use it to call the Google Sheets API
+      if (data.session?.provider_token) {
+        response.cookies.set('google_access_token', data.session.provider_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          // Token typically valid for 1 hour
+          maxAge: 60 * 60,
+          path: '/',
+        })
+      }
+
+      return response
     }
   }
 

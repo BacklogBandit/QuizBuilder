@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import { fireCorrectConfetti, fireEndConfetti } from '@/lib/confetti'
 import { cn } from '@/lib/utils'
 import { RefreshCw, SkipForward, Undo2, Users, Trophy } from 'lucide-react'
 import Link from 'next/link'
+import QRCodeCanvas from '@/components/QRCode'
 
 interface Category { id: string; title: string; order_index: number; point_increment: number }
-interface Question { id: string; category_id: string; question_text: string; answer_text: string; points: number; order_index: number; is_answered: boolean; skipped: boolean }
+interface Question { id: string; category_id: string; question_text: string; answer_text: string; options?: string[] | null; type: string; points: number; order_index: number; is_answered: boolean; skipped: boolean }
 interface BuzzItem { participantId: string; username: string; buzzOrder: number }
 interface Participant { id: string; username: string; total_score: number }
 
@@ -30,11 +32,13 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
   const [showWaiting, setShowWaiting] = useState(session.status === 'waiting')
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [lastAction, setLastAction] = useState<{ participantId: string; questionId: string } | null>(null)
+  const [pendingEndQuiz, setPendingEndQuiz] = useState(false)
 
   const joinUrl = `${appUrl}/join`
   const controllerUrl = `${appUrl}/controller/${session.id}`
 
   const supabase = createClient()
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
   // Start session
   async function startSession() {
@@ -58,37 +62,39 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
 
   // Score a participant
   async function scoreAction(result: 'correct' | 'wrong') {
-    if (!activeQuestion || buzzList.length === 0) return
-    const top = buzzList[0]
-    setLastAction({ participantId: top.participantId, questionId: activeQuestion.id })
+    if (!activeQuestion) return
+    const top = buzzList[0] ?? null
 
-    const res = await fetch(`/api/session/${session.id}/score`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questionId: activeQuestion.id, participantId: top.participantId, result }),
-    })
-    const data = await res.json()
+    // Only call the score API if someone actually buzzed
+    if (top) {
+      setLastAction({ participantId: top.participantId, questionId: activeQuestion.id })
+      await fetch(`/api/session/${session.id}/score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: activeQuestion.id, participantId: top.participantId, result }),
+      })
+    }
 
     if (result === 'correct') {
       fireCorrectConfetti()
       setRevealAnswer(true)
       setQuestions(prev => prev.map(q => q.id === activeQuestion.id ? { ...q, is_answered: true } : q))
-      // Check if all done
       const remaining = questions.filter(q => !q.is_answered && q.id !== activeQuestion.id)
       if (remaining.length === 0) {
-        setTimeout(() => {
-          fireEndConfetti()
-          endQuiz()
-        }, 1500)
-      } else {
-        setTimeout(() => {
-          setActiveQuestion(null)
-          setRevealAnswer(false)
-          setBuzzList([])
-        }, 2000)
+        // Last question — fire confetti now, end the quiz when QM closes
+        setTimeout(() => fireEndConfetti(), 400)
+        setPendingEndQuiz(true)
       }
+      // No auto-close — QM dismisses with ✕
     } else {
-      // Wrong: remove from buzz list, keep modal open for next buzzer
+      // Notify wrong participant, and who's next
+      const nextBuzzer = buzzList[1] ?? null
+      if (top) {
+        channelRef.current?.send({
+          type: 'broadcast', event: 'buzz-result',
+          payload: { wrongParticipantId: top.participantId, nextParticipantId: nextBuzzer?.participantId ?? null },
+        })
+      }
       setBuzzList(prev => prev.slice(1))
     }
   }
@@ -101,9 +107,18 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
       body: JSON.stringify({ questionId: activeQuestion.id }),
     })
     setQuestions(prev => prev.map(q => q.id === activeQuestion.id ? { ...q, is_answered: true, skipped: true } : q))
+    // Show the answer before closing — QM dismisses manually
+    setRevealAnswer(true)
+  }
+
+  function closeQuestion() {
     setActiveQuestion(null)
     setBuzzList([])
     setRevealAnswer(false)
+    if (pendingEndQuiz) {
+      setPendingEndQuiz(false)
+      endQuiz()
+    }
   }
 
   async function resetBuzzer() {
@@ -114,6 +129,8 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
       body: JSON.stringify({ questionId: activeQuestion.id }),
     })
     setBuzzList([])
+    // Tell all participant screens to go back to idle
+    channelRef.current?.send({ type: 'broadcast', event: 'buzz-reset', payload: {} })
   }
 
   async function undoLastAction() {
@@ -146,6 +163,7 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
   // Real-time: buzz events via Supabase Realtime Broadcast
   useEffect(() => {
     const channel = supabase.channel(`session:${session.id}`)
+    channelRef.current = channel
 
     channel
       .on('broadcast', { event: 'buzz' }, ({ payload }) => {
@@ -166,7 +184,7 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
 
     loadLeaderboard()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => { channelRef.current = null; supabase.removeChannel(channel) }
   }, [session.id])
 
   const sortedCategories = [...categories].sort((a, b) => a.order_index - b.order_index)
@@ -180,6 +198,7 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
       <WaitingRoom
         quizTitle={quiz.title}
         joinUrl={joinUrl}
+        controllerUrl={controllerUrl}
         joinCode={session.join_code}
         participants={participants}
         onStart={startSession}
@@ -202,6 +221,11 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
               <Undo2 size={13} /> Undo
             </button>
           )}
+          {activeQuestion && (
+            <button onClick={resetBuzzer} className="flex items-center gap-1.5 text-xs text-purple-300 hover:text-white px-3 py-1.5 rounded-lg border border-purple-500/40 transition-colors">
+              <RefreshCw size={13} /> Reset Buzzers
+            </button>
+          )}
           <button onClick={() => { loadLeaderboard(); setShowLeaderboard(true) }} className="text-purple-300 hover:text-white transition-colors p-2">
             <Trophy size={18} />
           </button>
@@ -212,18 +236,18 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
       </div>
 
       {/* Board */}
-      <div className="flex-1 px-4 pb-6">
+      <div className="flex-1 px-4 pb-4 overflow-auto">
         <div
-          className="grid gap-3 h-full"
+          className="grid gap-2"
           style={{ gridTemplateColumns: `repeat(${sortedCategories.length}, 1fr)` }}
         >
           {sortedCategories.map(cat => {
             const catQs = questions.filter(q => q.category_id === cat.id).sort((a, b) => a.order_index - b.order_index)
             return (
-              <div key={cat.id} className="space-y-3">
+              <div key={cat.id} className="space-y-2">
                 {/* Category header */}
-                <div className="bg-purple-900/70 border border-purple-400/30 rounded-xl px-3 py-3 text-center">
-                  <span className="text-purple-100 font-bold text-sm uppercase tracking-wider">{cat.title}</span>
+                <div className="bg-purple-900/70 border border-purple-400/30 rounded-xl px-2 py-3 text-center">
+                  <span className="text-white font-black text-base uppercase tracking-wide">{cat.title}</span>
                 </div>
                 {/* Question tiles */}
                 {catQs.map(q => (
@@ -232,16 +256,16 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
                     onClick={() => openQuestion(q)}
                     disabled={q.is_answered}
                     className={cn(
-                      'w-full aspect-square rounded-xl border-2 flex items-center justify-center transition-all',
+                      'w-full h-16 rounded-xl border-2 flex items-center justify-center transition-all',
                       q.is_answered
                         ? 'bg-purple-950/40 border-purple-900/30 cursor-default'
                         : 'bg-purple-800/50 border-purple-500/50 hover:bg-purple-700/60 hover:border-purple-400 hover:scale-[1.02] cursor-pointer shadow-lg'
                     )}
                   >
                     {q.is_answered ? (
-                      <span className="text-purple-800 text-2xl font-black">{q.skipped ? '—' : '✓'}</span>
+                      <span className="text-purple-700 text-xl font-black">{q.skipped ? '—' : '✓'}</span>
                     ) : (
-                      <span className="text-yellow-300 text-3xl font-black drop-shadow">{q.points}</span>
+                      <span className="text-yellow-300 text-2xl font-black drop-shadow">{q.points}</span>
                     )}
                   </button>
                 ))}
@@ -261,7 +285,8 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
           onWrong={() => scoreAction('wrong')}
           onSkip={skipQuestion}
           onResetBuzzer={resetBuzzer}
-          onClose={() => { setActiveQuestion(null); setBuzzList([]); setRevealAnswer(false) }}
+          onUndo={lastAction ? undoLastAction : null}
+          onClose={closeQuestion}
           negativeMarking={quiz.negative_marking}
         />
       )}
@@ -272,7 +297,7 @@ export default function QuizBoard({ quiz, session, categories, questions: initia
 // ─── Question Modal ───────────────────────────────────────────
 
 function QuestionModal({
-  question, buzzList, revealAnswer, onCorrect, onWrong, onSkip, onResetBuzzer, onClose, negativeMarking
+  question, buzzList, revealAnswer, onCorrect, onWrong, onSkip, onResetBuzzer, onUndo, onClose, negativeMarking
 }: {
   question: Question
   buzzList: BuzzItem[]
@@ -281,86 +306,133 @@ function QuestionModal({
   onWrong: () => void
   onSkip: () => void
   onResetBuzzer: () => void
+  onUndo: (() => void) | null
   onClose: () => void
   negativeMarking: boolean
 }) {
-  const topBuzzer = buzzList[0]
+  const [wrongFlash, setWrongFlash] = useState(false)
+
+  function handleWrong() {
+    setWrongFlash(true)
+    setTimeout(() => setWrongFlash(false), 600)
+    onWrong()
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.75)' }}>
-      <div
-        className="w-full max-w-2xl rounded-t-3xl border-t border-x p-8 animate-slide-up"
-        style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+    <div
+      className="fixed inset-0 z-50 flex flex-col transition-colors duration-200"
+      style={{ background: wrongFlash ? 'rgba(180,0,0,0.35)' : 'rgba(0,0,0,0.88)' }}
+    >
+      {/* ── Close button: absolutely positioned so nothing in the flex flow can overlap it ── */}
+      <button
+        onClick={onClose}
+        className={cn(
+          'absolute top-5 right-6 z-10 flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all',
+          revealAnswer
+            ? 'bg-white text-black hover:bg-gray-200 shadow-lg shadow-white/20'
+            : 'text-gray-500 hover:text-white border border-gray-700'
+        )}
       >
-        {/* Points badge */}
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-yellow-400 font-black text-xl">{question.points} pts</span>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-lg">✕</button>
-        </div>
+        {revealAnswer ? 'Close  ✕' : '✕'}
+      </button>
 
-        {/* Question text */}
-        <p className="text-white text-xl font-semibold leading-snug mb-6">{question.question_text}</p>
+      {/* ── Question — full screen, centred ── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-16 text-center">
+        <span className="text-yellow-400 font-black text-2xl mb-8">{question.points} pts</span>
+        <p className="text-white font-black leading-tight" style={{ fontSize: 'clamp(2rem, 5vw, 4rem)' }}>
+          {question.question_text}
+        </p>
 
+        {/* MCQ options */}
+        {question.options && question.options.length > 0 && (
+          <div className="grid grid-cols-2 gap-3 mt-10 w-full max-w-3xl">
+            {question.options.map((opt, i) => {
+              const labels = ['A', 'B', 'C', 'D']
+              const isCorrect = revealAnswer && opt === question.answer_text
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    'flex items-center gap-3 px-5 py-4 rounded-2xl border-2 text-left transition-colors',
+                    isCorrect
+                      ? 'bg-green-900/50 border-green-400/80 text-green-200'
+                      : 'bg-white/5 border-white/10 text-gray-200'
+                  )}
+                >
+                  <span className={cn(
+                    'w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0',
+                    isCorrect ? 'bg-green-500 text-white' : 'bg-purple-800 text-purple-200'
+                  )}>
+                    {labels[i]}
+                  </span>
+                  <span className="font-semibold text-lg leading-snug">{opt}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Control panel — pinned to bottom ── */}
+      <div className="w-full max-w-2xl mx-auto px-6 pb-8 space-y-3">
         {/* Answer */}
         {revealAnswer && (
-          <div className="mb-6 p-4 rounded-xl bg-green-900/30 border border-green-500/40">
-            <p className="text-xs text-green-400 font-medium mb-1">ANSWER</p>
-            <p className="text-green-300 text-lg font-bold">{question.answer_text}</p>
+          <div className="p-4 rounded-2xl bg-green-900/40 border border-green-500/40 text-center">
+            <p className="text-xs text-green-400 font-semibold uppercase tracking-widest mb-1">Answer</p>
+            <p className="text-green-200 text-2xl font-bold">{question.answer_text}</p>
           </div>
         )}
 
         {/* Buzz list */}
         {buzzList.length > 0 && (
-          <div className="mb-6">
-            <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Buzz Order</p>
-            <div className="space-y-1.5">
-              {buzzList.map((b, i) => (
-                <div
-                  key={b.participantId}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg',
-                    i === 0 ? 'bg-green-900/40 border border-green-500/40' : 'bg-white/5'
-                  )}
-                >
-                  <span className={cn('w-5 text-sm font-bold', i === 0 ? 'text-green-400' : 'text-gray-500')}>
-                    #{b.buzzOrder}
-                  </span>
-                  <span className={cn('font-medium', i === 0 ? 'text-green-300' : 'text-gray-400')}>
-                    {b.username}
-                  </span>
-                  {i === 0 && <span className="ml-auto text-green-400 text-xs font-bold">FIRST!</span>}
-                </div>
-              ))}
-            </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {buzzList.map((b, i) => (
+              <div
+                key={b.participantId}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold',
+                  i === 0 ? 'bg-green-900/60 border border-green-500/60 text-green-300' : 'bg-white/5 text-gray-400'
+                )}
+              >
+                <span>#{b.buzzOrder}</span>
+                <span>{b.username}</span>
+                {i === 0 && <span className="text-green-400 font-bold">⚡</span>}
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Action buttons */}
+        {/* Correct / Wrong */}
         <div className="flex gap-3">
           <button
             onClick={onCorrect}
-            disabled={!topBuzzer || revealAnswer}
-            className="flex-1 py-4 rounded-xl bg-green-600 hover:bg-green-500 disabled:opacity-30 text-white font-bold text-lg transition-colors"
+            disabled={revealAnswer}
+            className="flex-1 py-4 rounded-2xl bg-green-600 hover:bg-green-500 disabled:opacity-30 text-white font-black text-lg transition-colors"
           >
             ✓ Correct
           </button>
           <button
-            onClick={onWrong}
-            disabled={!topBuzzer || revealAnswer}
-            className="flex-1 py-4 rounded-xl bg-red-700 hover:bg-red-600 disabled:opacity-30 text-white font-bold text-lg transition-colors"
+            onClick={handleWrong}
+            disabled={revealAnswer}
+            className="flex-1 py-4 rounded-2xl bg-red-700 hover:bg-red-600 disabled:opacity-30 text-white font-black text-lg transition-colors"
           >
             ✗ Wrong{negativeMarking ? ` (−${question.points})` : ''}
           </button>
         </div>
 
-        {/* Secondary row */}
-        <div className="flex gap-3 mt-3">
-          <button onClick={onSkip} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm text-gray-300 hover:text-white transition-colors" style={{ borderColor: 'var(--border)' }}>
-            <SkipForward size={14} /> Skip
+        {/* Secondary row: Skip | Reset Buzzers | Undo | Close */}
+        <div className="flex gap-2">
+          <button onClick={onSkip} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-sm text-gray-400 hover:text-white transition-colors" style={{ borderColor: '#2a1d4a' }}>
+            <SkipForward size={13} /> Skip
           </button>
-          <button onClick={onResetBuzzer} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm text-gray-300 hover:text-white transition-colors" style={{ borderColor: 'var(--border)' }}>
-            <RefreshCw size={14} /> Reset Buzzers
+          <button onClick={onResetBuzzer} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-sm text-purple-300 hover:text-white transition-colors" style={{ borderColor: '#4c2a8a' }}>
+            <RefreshCw size={13} /> Reset Buzzers
           </button>
+          {onUndo && (
+            <button onClick={onUndo} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-sm text-yellow-400 hover:text-yellow-200 transition-colors" style={{ borderColor: '#78450a' }}>
+              <Undo2 size={13} /> Undo
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -370,28 +442,25 @@ function QuestionModal({
 // ─── Waiting Room ─────────────────────────────────────────────
 
 function WaitingRoom({
-  quizTitle, joinUrl, joinCode, participants, onStart
+  quizTitle, joinUrl, controllerUrl, joinCode, participants, onStart
 }: {
   quizTitle: string
   joinUrl: string
+  controllerUrl: string
   joinCode: string
   participants: Participant[]
   onStart: () => void
 }) {
-  // Generate QR code URL via Google Charts API
-  const qrUrl = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(joinUrl)}&choe=UTF-8`
-
   return (
     <div className="min-h-screen bg-quiz-gradient flex flex-col items-center justify-center p-8 text-center">
       <h1 className="text-4xl font-black text-white mb-2 tracking-wide">{quizTitle}</h1>
       <p className="text-purple-300 mb-10">Waiting for participants to join…</p>
 
       <div className="flex gap-12 items-start mb-12">
-        {/* QR Code */}
+        {/* Join QR */}
         <div className="text-center">
           <div className="bg-white p-3 rounded-2xl inline-block mb-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrUrl} alt="QR Code" width={160} height={160} />
+            <QRCodeCanvas url={joinUrl} size={160} />
           </div>
           <p className="text-xs text-purple-300">Scan to join</p>
         </div>
@@ -408,13 +477,7 @@ function WaitingRoom({
         {/* Controller QR */}
         <div className="text-center">
           <div className="bg-white p-3 rounded-2xl inline-block mb-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(`${joinUrl.replace('/join', '')}/controller/${participants[0]?.id ?? ''}`)}&choe=UTF-8`}
-              alt="Controller QR"
-              width={160}
-              height={160}
-            />
+            <QRCodeCanvas url={controllerUrl} size={160} />
           </div>
           <p className="text-xs text-purple-300">QM Controller</p>
         </div>

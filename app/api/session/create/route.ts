@@ -2,8 +2,37 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { generateJoinCode } from '@/lib/utils'
 
+async function resetQuestionsForQuiz(service: ReturnType<typeof createServiceClient>, quizId: string) {
+  // Get all category IDs for this quiz
+  const { data: categories } = await service
+    .from('categories')
+    .select('id')
+    .eq('quiz_id', quizId)
+
+  if (!categories?.length) return
+
+  // Reset is_answered + skipped so every session starts with a fresh board
+  await service
+    .from('questions')
+    .update({ is_answered: false, skipped: false })
+    .in('category_id', categories.map(c => c.id))
+}
+
+async function createSession(service: ReturnType<typeof createServiceClient>, quizId: string) {
+  let joinCode = generateJoinCode()
+  for (let i = 0; i < 10; i++) {
+    const { data: existing } = await service.from('sessions').select('id').eq('join_code', joinCode).single()
+    if (!existing) break
+    joinCode = generateJoinCode()
+  }
+  return service
+    .from('sessions')
+    .insert({ quiz_id: quizId, join_code: joinCode, status: 'waiting' })
+    .select('id, join_code')
+    .single()
+}
+
 export async function GET(req: Request) {
-  // Redirect from dashboard "Launch" link
   const { searchParams } = new URL(req.url)
   const quizId = searchParams.get('quizId')
   if (!quizId) return NextResponse.redirect(new URL('/dashboard', req.url))
@@ -13,28 +42,13 @@ export async function GET(req: Request) {
   if (!user) return NextResponse.redirect(new URL('/login', req.url))
 
   const service = createServiceClient()
-
-  // Check quiz ownership
-  const { data: quiz } = await service.from('quizzes').select('master_id, status').eq('id', quizId).single()
+  const { data: quiz } = await service.from('quizzes').select('master_id').eq('id', quizId).single()
   if (!quiz || quiz.master_id !== user.id) return NextResponse.redirect(new URL('/dashboard', req.url))
 
-  // Generate unique join code
-  let joinCode = generateJoinCode()
-  let attempts = 0
-  while (attempts < 10) {
-    const { data: existing } = await service.from('sessions').select('id').eq('join_code', joinCode).single()
-    if (!existing) break
-    joinCode = generateJoinCode()
-    attempts++
-  }
+  await resetQuestionsForQuiz(service, quizId)
 
-  const { data: session, error } = await service
-    .from('sessions')
-    .insert({ quiz_id: quizId, join_code: joinCode, status: 'waiting' })
-    .select('id')
-    .single()
-
-  if (error) return NextResponse.redirect(new URL('/dashboard?error=create_failed', req.url))
+  const { data: session, error } = await createSession(service, quizId)
+  if (error || !session) return NextResponse.redirect(new URL('/dashboard?error=create_failed', req.url))
 
   return NextResponse.redirect(new URL(`/quiz/${quizId}/session?sessionId=${session.id}`, req.url))
 }
@@ -52,21 +66,10 @@ export async function POST(req: Request) {
   const { data: quiz } = await service.from('quizzes').select('master_id').eq('id', quizId).single()
   if (!quiz || quiz.master_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  let joinCode = generateJoinCode()
-  let attempts = 0
-  while (attempts < 10) {
-    const { data: existing } = await service.from('sessions').select('id').eq('join_code', joinCode).single()
-    if (!existing) break
-    joinCode = generateJoinCode()
-    attempts++
-  }
+  await resetQuestionsForQuiz(service, quizId)
 
-  const { data: session, error } = await service
-    .from('sessions')
-    .insert({ quiz_id: quizId, join_code: joinCode, status: 'waiting' })
-    .select('id, join_code')
-    .single()
+  const { data: session, error } = await createSession(service, quizId)
+  if (error || !session) return NextResponse.json({ error: error?.message ?? 'Failed to create session' }, { status: 500 })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ sessionId: session.id, joinCode: session.join_code })
 }

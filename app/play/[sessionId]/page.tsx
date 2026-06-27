@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, useRef, use } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import { Trophy, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -12,14 +13,16 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
   const [myInfo, setMyInfo] = useState<{ participantId: string; username: string } | null>(null)
   const [myScore, setMyScore] = useState(0)
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null)
+  const [currentQuestion, setCurrentQuestion] = useState<{ question_text: string; options?: string[] } | null>(null)
   const [sessionStatus, setSessionStatus] = useState<string>('waiting')
-  const [buzzState, setBuzzState] = useState<'idle' | 'first' | 'other' | 'loading'>('idle')
+  const [buzzState, setBuzzState] = useState<'idle' | 'first' | 'other' | 'loading' | 'wrong'>('idle')
   const [myBuzzOrder, setMyBuzzOrder] = useState<number | null>(null)
   const [leaderboard, setLeaderboard] = useState<Participant[]>([])
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const supabase = createClient()
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
   useEffect(() => {
     async function init() {
@@ -36,7 +39,10 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
   }, [sessionId])
 
   useEffect(() => {
-    const channel = supabase.channel(`session:${sessionId}`)
+    const channel = supabase.channel(`session:${sessionId}`, {
+      config: { broadcast: { self: false } },
+    })
+    channelRef.current = channel
 
     channel
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` }, ({ new: row }) => {
@@ -45,6 +51,17 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
           setCurrentQuestionId(row.current_question_id)
           setBuzzState('idle')
           setMyBuzzOrder(null)
+          // Fetch question details (text + options) so participant can read it
+          if (row.current_question_id) {
+            supabase
+              .from('questions')
+              .select('question_text, options')
+              .eq('id', row.current_question_id)
+              .single()
+              .then(({ data }) => setCurrentQuestion(data))
+          } else {
+            setCurrentQuestion(null)
+          }
         }
         if (row.status === 'ended') {
           loadLeaderboard()
@@ -54,6 +71,22 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'participants', filter: `id=eq.${myInfo?.participantId}` }, ({ new: row }) => {
         setMyScore(row.total_score)
       })
+      .on('broadcast', { event: 'buzz-result' }, ({ payload }) => {
+        if (!myInfo) return
+        if (payload.wrongParticipantId === myInfo.participantId) {
+          setBuzzState('wrong')
+          setMyBuzzOrder(null)
+          // Flash red then back to idle after 1.5s
+          setTimeout(() => setBuzzState('idle'), 1500)
+        } else if (payload.nextParticipantId === myInfo.participantId) {
+          setBuzzState('first')
+          setMyBuzzOrder(1)
+        }
+      })
+      .on('broadcast', { event: 'buzz-reset' }, () => {
+        setBuzzState('idle')
+        setMyBuzzOrder(null)
+      })
       .subscribe()
 
     // Load initial session state
@@ -61,11 +94,18 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
       if (data) {
         setSessionStatus(data.status)
         setCurrentQuestionId(data.current_question_id)
+        if (data.current_question_id) {
+          supabase.from('questions').select('question_text, options').eq('id', data.current_question_id).single()
+            .then(({ data: q }) => setCurrentQuestion(q))
+        }
         if (data.status === 'ended') { loadLeaderboard(); setShowLeaderboard(true) }
       }
     })
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      channelRef.current = null
+      supabase.removeChannel(channel)
+    }
   }, [sessionId, myInfo?.participantId])
 
   async function loadLeaderboard() {
@@ -86,17 +126,18 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
       })
       const data = await res.json()
 
-      // Broadcast to board via realtime
-      const channel = supabase.channel(`session:${sessionId}`)
-      await channel.send({
-        type: 'broadcast',
-        event: 'buzz',
-        payload: {
-          participantId: myInfo.participantId,
-          username: myInfo.username,
-          buzzOrder: data.buzzOrder,
-        },
-      })
+      // Broadcast to board via the already-subscribed channel
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: 'broadcast',
+          event: 'buzz',
+          payload: {
+            participantId: myInfo.participantId,
+            username: myInfo.username,
+            buzzOrder: data.buzzOrder,
+          },
+        })
+      }
 
       setMyBuzzOrder(data.buzzOrder)
       setBuzzState(data.buzzOrder === 1 ? 'first' : 'other')
@@ -125,7 +166,13 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
   }
 
   if (showLeaderboard) {
-    return <ParticipantLeaderboard leaderboard={leaderboard} myId={myInfo.participantId} />
+    return (
+      <ParticipantLeaderboard
+        leaderboard={leaderboard}
+        myId={myInfo.participantId}
+        onBack={sessionStatus !== 'ended' ? () => setShowLeaderboard(false) : undefined}
+      />
+    )
   }
 
   if (sessionStatus === 'waiting') {
@@ -148,6 +195,8 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
   const bgStyle =
     buzzState === 'first'
       ? 'radial-gradient(ellipse at 50% 50%, #14532d 0%, #052e16 60%, #0a0314 100%)'
+      : buzzState === 'wrong'
+      ? 'radial-gradient(ellipse at 50% 50%, #991b1b 0%, #450a0a 60%, #0a0314 100%)'
       : buzzState === 'other'
       ? 'radial-gradient(ellipse at 50% 50%, #7f1d1d 0%, #450a0a 60%, #0a0314 100%)'
       : 'radial-gradient(ellipse at 50% 60%, #2d1b69 0%, #0a0314 70%)'
@@ -165,6 +214,27 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
         </div>
       </div>
 
+      {/* Question + options (shown when a question is active) */}
+      {currentQuestion && buzzState === 'idle' && (
+        <div className="px-5 pt-2 pb-4">
+          <p className="text-white text-lg font-bold text-center leading-snug mb-3">
+            {currentQuestion.question_text}
+          </p>
+          {currentQuestion.options && currentQuestion.options.length > 0 && (
+            <div className="grid grid-cols-1 gap-2">
+              {currentQuestion.options.map((opt, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10">
+                  <span className="w-7 h-7 rounded-full bg-purple-800 text-purple-200 flex items-center justify-center text-xs font-black flex-shrink-0">
+                    {['A','B','C','D'][i]}
+                  </span>
+                  <span className="text-gray-200 font-medium">{opt}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Main buzz area */}
       <div className="flex-1 flex flex-col items-center justify-center px-6">
         {buzzState === 'first' ? (
@@ -172,6 +242,12 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
             <div className="text-7xl mb-4">🎉</div>
             <h2 className="text-3xl font-black text-white">YOU'RE FIRST!</h2>
             <p className="text-green-300 mt-2">Answer the question!</p>
+          </div>
+        ) : buzzState === 'wrong' ? (
+          <div className="text-center animate-pulse">
+            <div className="text-7xl mb-4">❌</div>
+            <h2 className="text-3xl font-black text-red-300">WRONG!</h2>
+            <p className="text-red-400 mt-2">Better luck next time</p>
           </div>
         ) : buzzState === 'other' ? (
           <div className="text-center">
@@ -204,7 +280,7 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
   )
 }
 
-function ParticipantLeaderboard({ leaderboard, myId }: { leaderboard: Participant[]; myId: string }) {
+function ParticipantLeaderboard({ leaderboard, myId, onBack }: { leaderboard: Participant[]; myId: string; onBack?: () => void }) {
   const sorted = [...leaderboard].sort((a, b) => b.total_score - a.total_score)
   const medals = ['🥇', '🥈', '🥉']
 
@@ -237,9 +313,15 @@ function ParticipantLeaderboard({ leaderboard, myId }: { leaderboard: Participan
         ))}
       </div>
 
-      <a href="/join" className="mt-10 text-sm text-purple-400 hover:text-purple-300 transition-colors">
-        Play another quiz →
-      </a>
+      {onBack ? (
+        <button onClick={onBack} className="mt-10 text-sm text-purple-400 hover:text-purple-300 transition-colors">
+          ← Back to quiz
+        </button>
+      ) : (
+        <a href="/join" className="mt-10 text-sm text-purple-400 hover:text-purple-300 transition-colors">
+          Play another quiz →
+        </a>
+      )}
     </div>
   )
 }
