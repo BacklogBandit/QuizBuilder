@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0a1e; color: #e8eaf0; font-size: 13px; }
+
+/* TOP NAV */
+.top-bar { background: #150c2a; border-bottom: 1px solid #2a1d4a; padding: 0 16px; overflow-x: auto; white-space: nowrap; }
+.top-bar::-webkit-scrollbar { height: 3px; }
+.top-bar::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 2px; }
+.section-tabs { display: inline-flex; gap: 4px; padding: 8px 0; }
+.stab { display: inline-block; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: #6b7280; background: transparent; border: 1px solid transparent; white-space: nowrap; transition: all 0.15s; }
+.stab:hover { color: #c4b5fd; background: rgba(139,92,246,0.1); }
+.stab.active { color: #fff; background: #7c3aed; border-color: #7c3aed; }
+.stab.section-head { color: #4b5563; font-size: 10px; letter-spacing: 0.5px; cursor: default; padding: 5px 6px; }
+.stab.section-head:hover { background: transparent; color: #4b5563; }
+
+.screen-meta { background: #0f0a1e; border-bottom: 1px solid #1a1030; padding: 8px 16px; font-size: 11px; color: #6b7280; display: flex; align-items: center; gap: 8px; }
+.device-pill { font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+.dp-laptop { background: #1e2347; color: #4f6ef7; }
+.dp-phone { background: #0f2a1f; color: #22c55e; }
+
+.canvas { padding: 24px; min-height: 500px; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; }
+
+/* ── FRAMES ── */
+.laptop { background: #1a1d2e; border-radius: 10px; border: 1px solid #2a2d3e; width: 100%; max-width: 800px; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.6); }
+.bar { background: #131520; border-bottom: 1px solid #2a2d3e; padding: 7px 12px; display: flex; align-items: center; gap: 8px; }
+.dots { display: flex; gap: 4px; }
+.d { width: 8px; height: 8px; border-radius: 50%; }
+.url { flex: 1; background: #1a1d2e; border-radius: 4px; padding: 3px 10px; font-size: 10px; color: #4b5563; font-family: monospace; margin: 0 10px; }
+
+.phone-wrap { display: flex; justify-content: center; }
+.phone { width: 300px; background: #0f0a1e; border-radius: 36px; border: 5px solid #2a2d3e; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.7); }
+.notch { height: 26px; background: #08050f; display: flex; align-items: center; justify-content: center; }
+.npill { width: 56px; height: 13px; background: #150c2a; border-radius: 6px; }
+.phone-body { min-height: 540px; }
+
+/* ── DESIGN TOKENS ── */
+:root {
+  --pu-deep: #0a0314; --pu-mid: #1e0438; --pu-rich: #3b0764;
+  --pu-light: #7c3aed; --pu-soft: #c4b5fd;
+  --lav: #ede9fe; --gold: #fbbf24;
+  --green: #22c55e; --red: #ef4444;
+  --surface: #150c2a; --border: #2a1d4a;
+  --text: #e8eaf0; --muted: #6b7280;
+}
+
+/* ── 1. LOGIN ── */
+.s-login { min-height: 380px; background: linear-gradient(140deg, #2d0a5e 0%, #0f051e 60%); display: flex; align-items: center; justify-content: center; padding: 40px; }
+.login-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(167,139,250,0.25); border-radius: 16px; padding: 36px 32px; text-align: center; width: 300px; }
+.logo { font-size: 26px; font-weight: 900; color: #fff; }
+.logo em { color: #a78bfa; font-style: normal; }
+.tagline { font-size: 11px; color: #9ca3af; margin: 4px 0 28px; }
+.gbtn { display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; color: #111; border-radius: 8px; padding: 11px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; }
+.login-note { font-size: 10px; color: #4b5563; margin-top: 18px; line-height: 1.6; }
+
+/* ── 2. DASHBOARD ── */
+.s-dash { min-height: 380px; background: #0a0515; display: grid; grid-template-columns: 170px 1fr; }
+.dash-side { background: #0f0a1e; border-right: 1px solid #1a1030; padding: 18px 0; }
+.dlogo { font-size: 14px; font-weight: 900; color: #fff; padding: 0 16px 16px; border-bottom: 1px solid #1a1030; margin-bottom: 10px; }
+.dlogo em { color: #a78bfa; font-style: normal; }
+.dnav { padding: 7px 16px; font-size: 11px; color: #6b7280; cursor: pointer; display: flex; align-items: center; gap: 7px; }
+.dnav.a { color: #c4b5fd; background: rgba(139,92,246,0.12); border-right: 2px solid #7c3aed; }
+.dash-main { padding: 22px; }
+.dh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.dt { font-size: 17px; font-weight: 800; color: #fff; }
+.btn-p { background: #7c3aed; color: #fff; border: none; border-radius: 7px; padding: 8px 14px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.qgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.qcard { background: #150c2a; border: 1px solid #2a1d4a; border-radius: 9px; padding: 14px; cursor: pointer; }
+.qcard:hover { border-color: #7c3aed; }
+.qct { font-size: 12px; font-weight: 700; color: #e8eaf0; margin-bottom: 5px; }
+.qcm { font-size: 10px; color: #6b7280; }
+.qcb { display: inline-block; font-size: 9px; padding: 2px 7px; border-radius: 8px; margin-top: 8px; font-weight: 600; background: rgba(139,92,246,0.15); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.25); }
+.qcb.done { background: rgba(34,197,94,0.1); color: #22c55e; border-color: rgba(34,197,94,0.25); }
+.qcard.add { border-style: dashed; display: flex; align-items: center; justify-content: center; color: #4b5563; font-size: 12px; min-height: 80px; }
+
+/* ── 3. CREATE QUIZ ── */
+.s-create { min-height: 380px; background: #0a0515; display: grid; grid-template-columns: 180px 1fr; }
+.wiz-side { background: #0f0a1e; border-right: 1px solid #1a1030; padding: 20px 14px; }
+.wiz-logo { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #1a1030; }
+.wstep { display: flex; gap: 9px; padding-bottom: 22px; position: relative; }
+.wstep::after { content:''; position:absolute; left:11px; top:24px; width:2px; bottom:0; background:#1a1030; }
+.wstep:last-child::after { display:none; }
+.wnum { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; flex-shrink: 0; z-index:1; position:relative; }
+.wa { background: #fff; color: #0a0515; }
+.wp { background: #1a1030; color: #4b5563; }
+.wlabel { font-size: 11px; color: #6b7280; padding-top: 2px; }
+.wlabel.a { color: #c4b5fd; font-weight: 600; }
+.wiz-main { padding: 24px 28px; }
+.wh { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 3px; }
+.wsub { font-size: 11px; color: #6b7280; margin-bottom: 22px; }
+.flabel { font-size: 11px; font-weight: 600; color: #c0c8d8; display: block; margin-bottom: 5px; }
+.finput { width: 100%; background: #0f0a1e; border: 1px solid #2a1d4a; border-radius: 7px; padding: 9px 12px; font-size: 13px; color: #e8eaf0; margin-bottom: 16px; }
+.tog { display: flex; align-items: center; gap: 12px; padding: 12px; background: #0f0a1e; border: 1px solid #2a1d4a; border-radius: 8px; cursor: pointer; margin-bottom: 8px; }
+.tog.on { border-color: #7c3aed; background: rgba(139,92,246,0.08); }
+.tog-pill { width: 34px; height: 18px; border-radius: 9px; background: #1a1030; position: relative; flex-shrink: 0; transition: background 0.2s; }
+.tog.on .tog-pill { background: #7c3aed; }
+.togdot { width: 12px; height: 12px; background: #fff; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: left 0.2s; }
+.tog.on .togdot { left: 19px; }
+.tog-text { flex: 1; }
+.tog-label { font-size: 12px; font-weight: 600; color: #e8eaf0; }
+.tog-sub { font-size: 10px; color: #6b7280; margin-top: 2px; }
+
+/* ── 4. ADD CATEGORY ── */
+.s-addcat { min-height: 420px; background: #0a0515; display: grid; grid-template-columns: 1fr 1.1fr; }
+.ac-left { padding: 24px; border-right: 1px solid #1a1030; }
+.ac-right { padding: 24px; }
+.section-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #6b7280; margin-bottom: 10px; }
+.method-opt { background: #0f0a1e; border: 1px solid #2a1d4a; border-radius: 8px; padding: 11px 13px; cursor: pointer; margin-bottom: 7px; }
+.method-opt.sel { border-color: #7c3aed; background: rgba(139,92,246,0.08); }
+.mot { font-size: 12px; font-weight: 700; color: #e8eaf0; margin-bottom: 2px; }
+.mos { font-size: 10px; color: #6b7280; }
+.board-mini { background: linear-gradient(135deg, #2d0a5e, #1a063a); border-radius: 9px; padding: 14px; }
+.bmt { font-size: 11px; font-weight: 800; color: #fff; text-align: center; margin-bottom: 12px; letter-spacing: 0.3px; }
+.bmcols { display: flex; gap: 6px; }
+.bmc { flex: 1; }
+.bmc-hdr { font-size: 9px; font-weight: 700; color: #e0d7ff; text-align: center; background: rgba(255,255,255,0.08); border-radius: 4px; padding: 4px 4px; margin-bottom: 5px; }
+.bmc-hdr.new { background: rgba(139,92,246,0.3); border: 1px dashed rgba(139,92,246,0.5); color: #c4b5fd; }
+.bmt-tile { font-size: 12px; font-weight: 900; color: #92400e; background: linear-gradient(145deg,#f5f3ff,#ede9fe); border-radius: 4px; text-align: center; padding: 6px 4px; margin-bottom: 4px; }
+.bmt-tile.new { background: rgba(139,92,246,0.15); border: 1px dashed rgba(139,92,246,0.3); color: #7c3aed; }
+.bmt-tile.faded { background: rgba(109,40,217,0.18); color: rgba(109,40,217,0.35); }
+.add-col { flex: 0.6; display: flex; align-items: flex-start; justify-content: center; padding-top: 4px; }
+.add-col-btn { font-size: 18px; color: rgba(255,255,255,0.2); cursor: pointer; border: 1px dashed rgba(255,255,255,0.15); border-radius: 6px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+
+/* ── 5. SHEETS IMPORT ── */
+.s-sheets { padding: 24px 28px; background: #0a0515; min-height: 380px; }
+.url-row { display: flex; gap: 8px; margin-bottom: 20px; }
+.url-in { flex: 1; background: #0f0a1e; border: 1px solid #2a1d4a; border-radius: 7px; padding: 9px 12px; font-size: 11px; color: #c4b5fd; font-family: monospace; }
+.btn-import { background: #059669; color: #fff; border: none; border-radius: 7px; padding: 9px 16px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.tmpl-lbl { font-size: 11px; font-weight: 700; color: #c0c8d8; margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
+.tip { font-size: 9px; background: #1a1030; color: #4f6ef7; border-radius: 4px; padding: 2px 6px; border: 1px solid #2a2d3e; }
+table.tmpl { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 14px; }
+.tmpl th { background: #150c2a; color: #9ca3af; padding: 6px 9px; border: 1px solid #2a1d4a; text-align: left; font-weight: 600; }
+.tmpl td { padding: 5px 9px; border: 1px solid #1a1030; color: #c0c8d8; background: #0a0515; font-family: monospace; font-size: 9px; }
+.hl { color: #fbbf24; }
+.lg { display: flex; gap: 14px; flex-wrap: wrap; }
+.lg-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #6b7280; }
+.lg-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── 6. AI GEN ── */
+.s-aigen { min-height: 400px; background: #0a0515; display: grid; grid-template-columns: 1fr 1fr; }
+.ai-l { padding: 24px; border-right: 1px solid #1a1030; }
+.ai-r { padding: 24px; display: flex; align-items: center; justify-content: center; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.diff-row { display: flex; gap: 7px; }
+.dchip { padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid #2a1d4a; color: #6b7280; background: #0f0a1e; }
+.dchip.a { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.inc-row { display: flex; align-items: center; gap: 10px; }
+.inc-in { width: 56px; background: #0f0a1e; border: 1px solid #2a1d4a; border-radius: 6px; padding: 6px 8px; font-size: 14px; color: #fbbf24; font-weight: 800; text-align: center; }
+.inc-preview { font-size: 10px; color: #6b7280; }
+.inc-preview b { color: #fbbf24; }
+.gen-state { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.spinner { width: 36px; height: 36px; border: 3px solid #2a1d4a; border-top-color: #7c3aed; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.fmb { margin-bottom: 14px; }
+
+/* ── 7. AI PREVIEW ── */
+.s-aiprev { min-height: 420px; background: #0a0515; display: grid; grid-template-columns: 1fr 1fr; }
+.qlist { padding: 24px; border-right: 1px solid #1a1030; overflow-y: auto; max-height: 480px; }
+.qlist::-webkit-scrollbar { width: 3px; }
+.qlist::-webkit-scrollbar-thumb { background: #7c3aed; }
+.qcard2 { background: #0f0a1e; border: 1px solid #2a1d4a; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+.qch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.qpts { font-size: 10px; font-weight: 700; color: #fbbf24; }
+.qtype { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #1e2347; color: #4f6ef7; }
+.qregen { font-size: 10px; color: #7c3aed; cursor: pointer; text-decoration: underline; }
+.qt { font-size: 11px; color: #e8eaf0; line-height: 1.5; margin-bottom: 4px; }
+.qa { font-size: 10px; color: #22c55e; }
+.prev-right { padding: 24px; display: flex; flex-direction: column; gap: 14px; justify-content: space-between; }
+
+/* ── 8. QUIZ BOARD ── */
+.s-board { background: linear-gradient(155deg, #3b0764 0%, #1e0438 55%, #080212 100%); min-height: 440px; padding: 18px; position: relative; }
+.board-hdr { display: flex; align-items: center; margin-bottom: 8px; }
+.qtitle { flex: 1; font-size: 20px; font-weight: 900; color: #fff; text-align: center; text-shadow: 0 0 30px rgba(167,139,250,0.4); letter-spacing: 0.5px; }
+.icon-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+.col-hdrs { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 6px; }
+.col-hdr { text-align: center; font-size: 12px; font-weight: 700; color: #e0d7ff; padding: 8px 4px; }
+.tile-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.tile { background: linear-gradient(145deg,#f5f3ff,#ede9fe); border-radius: 9px; padding: 18px 8px; text-align: center; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.6); transition: all 0.18s; }
+.tile:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(124,58,237,0.45); }
+.tile.done { background: rgba(109,40,217,0.18); box-shadow: none; cursor: default; }
+.tile:hover.done { transform: none; }
+.tpts { font-size: 21px; font-weight: 900; color: #92400e; }
+.tile.done .tpts { color: rgba(109,40,217,0.35); }
+.fab { position: absolute; bottom: 14px; right: 14px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: #fff; border-radius: 18px; padding: 7px 13px; font-size: 11px; font-weight: 600; cursor: pointer; }
+
+/* ── 9. QUESTION MODAL ── */
+.s-modal { position: relative; min-height: 460px; background: linear-gradient(155deg,#3b0764,#1e0438,#080212); }
+.modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.65); }
+.mini-board { padding: 12px 16px; position: relative; z-index: 1; }
+.modal-sheet { position: relative; z-index: 2; background: #150c2a; border-top: 1px solid #2a1d4a; border-radius: 14px 14px 0 0; padding: 20px; display: grid; grid-template-columns: 1fr 210px; gap: 18px; }
+.modal-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
+.modal-q { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.4; margin-bottom: 12px; }
+.pts-badge { display: inline-block; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); color: #fbbf24; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 18px; margin-bottom: 12px; }
+.ans-box { background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3); border-radius: 7px; padding: 10px 14px; margin-bottom: 14px; }
+.ans-lbl { font-size: 9px; font-weight: 700; color: #6b7280; margin-bottom: 3px; }
+.ans-text { font-size: 13px; color: #c4b5fd; font-weight: 600; }
+.act-row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+.bcorrect { background: #22c55e; color: #fff; border: none; border-radius: 7px; padding: 9px 18px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.bwrong { background: #ef4444; color: #fff; border: none; border-radius: 7px; padding: 9px 18px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.bskip { background: transparent; border: 1px solid #2a1d4a; color: #9ca3af; border-radius: 7px; padding: 9px 12px; font-size: 11px; font-weight: 600; cursor: pointer; }
+.bundo { background: transparent; border: none; color: #6b7280; font-size: 11px; cursor: pointer; text-decoration: underline; }
+.buzz-panel {}
+.bz-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
+.bz-item { display: flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 7px; background: #0f0a1e; border: 1px solid #2a1d4a; margin-bottom: 5px; }
+.bz-item.first { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.35); }
+.bz-rank { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 800; }
+.r1 { background: #22c55e; color: #fff; }
+.r2 { background: #ef4444; color: #fff; }
+.r3 { background: #ef4444; color: #fff; opacity: 0.65; }
+.bz-name { font-size: 11px; color: #c0c8d8; }
+.bz-name.first { color: #22c55e; font-weight: 700; }
+.bz-t { font-size: 9px; color: #6b7280; margin-left: auto; }
+.reset-bz { width: 100%; margin-top: 8px; background: transparent; border: 1px solid #2a1d4a; border-radius: 6px; padding: 6px; font-size: 10px; color: #6b7280; cursor: pointer; }
+
+/* ── 10. QM PHONE ── */
+.s-qmphone { min-height: 540px; background: #0a0515; display: flex; flex-direction: column; }
+.qmp-hdr { background: #0f0a1e; padding: 12px 14px; border-bottom: 1px solid #1a1030; display: flex; align-items: center; justify-content: space-between; }
+.qmp-title { font-size: 12px; font-weight: 700; color: #c4b5fd; }
+.qmp-live { font-size: 10px; color: #22c55e; }
+.qmp-body { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.qmp-qtext { background: #0f0a1e; border: 1px solid #2a1d4a; border-radius: 8px; padding: 13px; font-size: 12px; color: #e8eaf0; line-height: 1.5; font-weight: 600; }
+.qmp-pts { font-size: 10px; color: #fbbf24; margin-top: 5px; }
+.qmp-bz-item { display: flex; align-items: center; gap: 7px; padding: 9px 11px; border-radius: 7px; background: #0f0a1e; border: 1px solid #2a1d4a; margin-bottom: 5px; }
+.qmp-bz-item.active { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.35); }
+.qmp-actions { padding: 14px; border-top: 1px solid #1a1030; }
+.act-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 7px; }
+.big-correct { background: #22c55e; color: #fff; border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 800; width: 100%; cursor: pointer; }
+.big-wrong { background: #ef4444; color: #fff; border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 800; width: 100%; cursor: pointer; }
+.sec-acts { display: flex; gap: 6px; }
+.sbtn { flex: 1; background: #0f0a1e; border: 1px solid #2a1d4a; color: #9ca3af; border-radius: 7px; padding: 8px; font-size: 10px; font-weight: 600; cursor: pointer; text-align: center; }
+
+/* ── 11. P BUZZ READY ── */
+.s-pbuzz { min-height: 540px; background: linear-gradient(155deg,#1e0438,#080212); display: flex; flex-direction: column; }
+.p-hdr { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+.p-name { font-size: 12px; color: #c4b5fd; font-weight: 600; }
+.p-score { font-size: 12px; color: #fbbf24; font-weight: 700; }
+.p-body { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 18px; }
+.buzz-btn { width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle, #7c3aed 0%, #4c1d95 100%); border: 4px solid rgba(167,139,250,0.35); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; color: #fff; cursor: pointer; box-shadow: 0 0 40px rgba(124,58,237,0.5); }
+.p-hint { font-size: 11px; color: rgba(255,255,255,0.35); text-align: center; line-height: 1.5; }
+.p-ftr { padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+.lb-icon { font-size: 20px; opacity: 0.35; cursor: pointer; }
+
+/* ── 12. FIRST BUZZ ── */
+.s-green { min-height: 540px; background: linear-gradient(155deg,#052e16,#14532d); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+.first-num { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; color: #fff; }
+.first-txt { font-size: 34px; font-weight: 900; color: #fff; text-align: center; line-height: 1.2; }
+.first-sub { font-size: 13px; color: rgba(255,255,255,0.55); }
+.first-wait { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 20px; }
+
+/* ── 13. NOT FIRST ── */
+.s-red { min-height: 540px; background: linear-gradient(155deg,#450a0a,#7f1d1d); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.nth-num { font-size: 68px; font-weight: 900; color: #fff; }
+.nth-lbl { font-size: 13px; color: rgba(255,255,255,0.55); text-align: center; line-height: 1.5; }
+.nth-wait { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 16px; }
+
+/* ── 14. LEADERBOARD ── */
+.s-lb { background: linear-gradient(155deg,#3b0764,#1e0438,#080212); min-height: 420px; padding: 26px; }
+.lb-hdr { text-align: center; margin-bottom: 22px; }
+.lb-trophy { font-size: 30px; margin-bottom: 6px; }
+.lb-title { font-size: 24px; font-weight: 900; color: #fff; }
+.lb-sub2 { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+table.lbt { width: 100%; border-collapse: collapse; }
+.lbt th { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6b7280; padding: 7px 14px; border-bottom: 1px solid #2a1d4a; text-align: left; }
+.lbt td { padding: 11px 14px; font-size: 12px; color: #c0c8d8; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.lbt tr.gold td { color: #fbbf24; font-weight: 700; background: rgba(251,191,36,0.07); }
+.lbt .score { font-size: 14px; font-weight: 800; }
+.lbt tr.gold .score { color: #fbbf24; }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="top-bar">
+  <div class="section-tabs">
+    <span class="stab section-head">CONFIG →</span>
+    <span class="stab active" onclick="go(0,this)">Login</span>
+    <span class="stab" onclick="go(1,this)">Dashboard</span>
+    <span class="stab" onclick="go(2,this)">Create Quiz</span>
+    <span class="stab" onclick="go(3,this)">Add Category</span>
+    <span class="stab" onclick="go(4,this)">Sheets Import</span>
+    <span class="stab" onclick="go(5,this)">AI Generate</span>
+    <span class="stab" onclick="go(6,this)">AI Preview</span>
+    <span class="stab section-head" style="margin-left:8px;">LIVE →</span>
+    <span class="stab" onclick="go(7,this)">Quiz Board</span>
+    <span class="stab" onclick="go(8,this)">Question Modal</span>
+    <span class="stab" onclick="go(9,this)">QM Phone</span>
+    <span class="stab" onclick="go(10,this)">Buzzer Ready</span>
+    <span class="stab" onclick="go(11,this)">Buzzer 1st 🟢</span>
+    <span class="stab" onclick="go(12,this)">Buzzer 2nd 🔴</span>
+    <span class="stab" onclick="go(13,this)">Leaderboard</span>
+  </div>
+</div>
+
+<div class="screen-meta">
+  <span id="smeta-name" style="font-weight:600;color:#e8eaf0;">Login</span>
+  <span class="device-pill dp-laptop" id="smeta-pill">💻 Laptop</span>
+  <span>·</span>
+  <span id="smeta-desc">Quiz master signs in with Google to access their dashboard</span>
+</div>
+
+<div class="canvas" id="canvas">
+
+  <!-- 0: LOGIN -->
+  <div class="screen active laptop">
+    <div class="bar"><div class="dots"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div></div><div class="url">quizmaster.app/login</div></div>
+    <div class="s-login">
+      <div class="login-card">
+        <div class="logo">Quiz<em>Master</em></div>
+        <div class="tagline">Build and host live quiz nights</div>
+        <button class="gbtn">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
+        </button>
+        <div class="login-note">Quiz masters sign in to create &amp; manage quizzes.<br>Participants only need a 6-digit session code — no account needed.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1: DASHBOARD -->
+  <div class="screen laptop" style="display:none">
+    <div class="bar"><div class="dots"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div></div><div class="url">quizmaster.app/dashboard</div></div>
+    <div class="s-dash">
+      <div class="dash-side">
+        <div class="dlogo">Quiz<em>Master</em></div>
+        <div class="dnav a">🎮 My Quizzes</div>
+        <div class="dnav">📊 Results</div>
+        <div class="dnav">⚙️ Settings</div>
+      </div>
+      <div class="dash-main">
+        <div class="dh"><div class="dt">My Quizzes</div><button class="btn-p">+ New Quiz</button></div>
+        <div class="qgrid">
+          <div class="qcard"><div class="qct">FIFA Trivia Night</div><div class="qcm">4 categories · 20 questions</div><div class="qcb">Draft</div></div>
+          <div class="qcard"><div class="qct">Office General Knowledge</div><div class="qcm">5 categories · 25 questions</div><div class="qcb done">Completed</div></div>
+          <div class="qcard"><div class="qct">Tech &amp; Science Bowl</div><div class="qcm">3 categories · 15 questions</div><div class="qcb">Draft</div></div>
+          <div class="qcard add">＋ Create New Quiz</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2: CREATE QUIZ -->
+  <div class="screen laptop" style="display:none;max-width:700px">
+    <div class="bar"><div class="dots"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div></div><div class="url">quizmaster.app/quiz/new</div></div>
+    <div class="s-create">
+      <div class="wiz-side">
+        <div class="wiz-logo">New Quiz</div>
+        <div class="wstep"><div class="wnum wa">1</div><div class="wlabel a">Quiz Setup</div></div>
+        <div class="wstep"><div class="wnum wp">2</div><div class="wlabel">Categories</div></div>
+        <div class="wstep"><div class="wnum wp">3</div><div class="wlabel">Launch</div></div>
+      </div>
+      <div class="wiz-main">
+        <div class="wh">Quiz Setup</div>
+        <div class="wsub">Name your quiz and set scoring rules</div>
+        <label class="flabel">Quiz Title</label>
+        <input class="finput" value="FIFA Trivia Night 2025" />
+        <label class="flabel">Scoring Rules</label>
+        <div class="tog on">
+          <div class="tog-pill"><div class="togdot"></div></div>
+          <div class="tog-text"><div class="tog-label">Negative Marking ON</div><div class="tog-sub">Wrong answers deduct the full question value</div></div>
+        </div>
+        <div class="tog">
+          <div class="tog-pill"><div class="togdot"></div></div>
+          <div class="tog-text"><div class="tog-label" style="color:#4b5563">Standard Scoring</div><div class="tog-sub">No penalty for wrong answers</div></div>
+        </div>
+        <button class="btn-p" style="width:100%;padding:11px;font-size:13px;margin-top:12px;">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3: ADD CATEGORY -->
+  <div class="screen laptop" style="display:none">
+    <div class="bar"><div class="dots"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div></div><div class="url">quizmaster.app/quiz/new/configure</div></div>
+    <div class="s-addcat">
+      <div class="ac-left">
+        <div class="wh" style="font-size:16px">Add Category</div>
+        <div class="wsub">Each category is a column on the board</div>
+        <label class="flabel">Category Title</label>
+        <input class="finput" value="FIFA" style="margin-bottom:18px" />
+        <label class="flabel">Import Questions Via</label>
+        <div class="method-opt sel"><div class="mot">📊 Google Sheets</div><div class="mos">Paste a link to your question spreadsheet</div></div>
+        <div class="method-opt"><div class="mot">🤖 AI Generation</div><div class="mos">Let Claude write questions for this category</div></div>
+        <button class="btn-p" style="width:100%;padding:10px;margin-top:14px">Configure Import →</button>
+      </div>
+      <div class="ac-right">
+        <div class="section-lbl">Board Preview</div>
+        <div class="board-mini">
+          <div class="bmt">FIFA Trivia Night 2025</div>
+          <div class="bmcols">
+            <div class="bmc">
+              <div class="bmc-hdr">History</div>
+              <div class="bmt-tile">10</div><div class="bmt-tile faded">20</div><div class="bmt-tile">30</div><div class="bmt-tile">40</div><div class="bmt-tile">50</div>
+            </div>
+            <div class="bmc">
+              <div class="bmc-hdr new">FIFA ✦ new</div>
+              <div class="bmt-tile new">10</div><div class="bmt-tile new">20</div><div class="bmt-tile new">30</div><div class="bmt-tile new">40</div><div class="bmt-tile new">50</div>
+            </div>
+            <div class="add-col"><div class="add-col-btn">＋</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4: SHEETS IMPORT -->
+  <div class="screen laptop" style="display:none">
+    <div class="bar"><div class="dots"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div></div><div class="url">quizmaster.app/quiz/new/configure — FIFA → Google Sheets</div></div>
+    <div class="s-sheets">
+      <div class="wh" style="font-size:16px">Import from Google Sheets</div>
+      <div class="wsub" style="margin-bottom:18px">Category: <strong style="color:#c4b5fd">FIFA</strong></div>
+      <div class="url-row">
+        <input class="url-in" value="https://docs.google.com/spreadsheets/d/1BxiMVs0XRA..." />
+        <button class="btn-import">Import Sheet</button>
+      </div>
+      <div class="tmpl-lbl">Column Format <span class="tip">hover column headers for explanation</span></div>
+      <table class="tmpl">
+        <tr>
+          <th title="The full question text">Question</th>
+          <th title="For 'text' type: the correct answer. For 'mcq': the letter (A/B/C/D). For 'multi': comma-separated letters e.g. A,C">Answer</th>
+          <th title="Point value for this question">Points</th>
+          <th title="text = open answer only | mcq = one correct from options | multi = multiple correct">Type</th>
+          <th title="Leave blank for 'text' type">Option A</th>
+          <th title="">Option B</th>
+          <th title="">Option C</th>
+          <th title="">Option D</th>
+        </tr>
+        <tr><td>Who created FIFA the game?</td><td class="hl">EA Sports</td><td class="hl">10</td><td>text</td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Which year was FIFA 94 released?</td><td class="hl">B</td><td class="hl">20</td><td>mcq</td><td>1993</td><td>1994</td><td>1995</td><td></td></tr>
+        <tr><td>Which of these are game modes?</td><td class="hl">A,C</td><td class="hl">30</td><td>multi</td><td>Ultimate Team</td><td>Season Pass</td><td>Volta Football</td><td>Career Mode</td></tr>
+      </table>
+      <div class="lg">
+        <div class="lg-item"><div class="lg-dot" style="background:#fbbf24"></div>text — just the answer, no options needed</div>
+        <div class="lg-item"><div class="lg-dot" style="background:#4f6ef7"></div>mcq — one correct letter (A/B/C/D)</div>
+        <div class="lg-item"><div class="lg-dot" style="background:#a78bfa"></div>multi — comma-separated correct letters</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5: AI GENERATE -->
+  <div class="screen laptop" style="display:none">
+    <div class="bar"><div class="dots"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div></div><div class="url">quizmaster.app/quiz/new/configure — FIFA → AI Generation</div></div>
+    <div class="s-aigen">
+      <div class="ai-l">
+        <div class="wh" style="font-size:16px">AI Question Generation</div>
+        <div class="wsub" style="margin-bottom:18px">Category: <strong style="color:#c4b5fd">FIFA</strong></div>
+        <div class="fmb"><label class="flabel">Topic</label><input class="finput" value="FIFA" /></div>
+        <div class="fmb"><label class="flabel">Context <span style="color:#4b5563;font-weight:400">(optional, recommended)</span></label>
+        <textarea class="finput" rows="3" style="resize:none;font-family:inherit">EA Sports FIFA video game series — focus on the game, its history, features, and player ratings. NOT the real FIFA sporting organisation or tournaments.</textarea></div>
+        <div class="fmb"><label class="flabel">Number of Questions</label>
+        <div class="slider-row"><input type="range" min="3" max="15" value="5" style="flex:1;accent-color:#7c3aed"><span style="font-size:15px;font-weight:700;color:#c4b5fd">5</span></div></div>
+        <div class="fmb"><label class="flabel">Difficulty</label><div class="diff-row"><div class="dchip">Easy</div><div class="dchip a">Medium</div><div class="dchip">Hard</div></div></div>
+        <div class="fmb"><label class="flabel">Point Increment</label>
+        <div class="inc-row"><input class="inc-in" value="10"><div class="inc-preview">→ questions worth <b>10, 20, 30, 40, 50</b> pts</div></div></div>
+        <button class="btn-p" style="width:100%;padding:11px;font-size:13px;background:linear-gradient(135deg,#7c3aed,#4c1d95)">✦ Generate Questions</button>
+      </div>
+      <div class="ai-r">
+        <div class="gen-state">
+          <div class="spinner"></div>
+          <div style="font-size:12px;color:#6b7280">Claude is writing your questions…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6: AI PREVIEW -->
+  <div class="screen laptop" style="display:none">
+    <div class="bar"><div class="dots"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div></div><div class="url">quizmaster.app/quiz/new/configure — FIFA → Preview</div></div>
+    <div class="s-aiprev">
+      <div class="qlist">
+        <div class="wh" style="font-size:15px;margin-bottom:3px">Review Questions</div>
+        <div class="wsub" style="margin-bottom:14px">Category: <strong style="color:#c4b5fd">FIFA</strong> · 5 questions · Medium</div>
+        <div class="qcard2"><div class="qch"><span class="qpts">10 pts</span><span class="qtype">text</span><span class="qregen">↻ Regenerate</span></div><div class="qt">Which company developed the FIFA video game series?</div><div class="qa">✓ EA Sports (Electronic Arts)</div></div>
+        <div class="qcard2"><div class="qch"><span class="qpts">20 pts</span><span class="qtype">mcq</span><span class="qregen">↻ Regenerate</span></div><div class="qt">In FIFA Ultimate Team, what is the rarest card tier?</div><div class="qa">✓ B — Icon</div><div style="font-size:9px;color:#6b7280;margin-top:3px">A: Gold · B: Icon · C: Hero · D: Silver</div></div>
+        <div class="qcard2"><div class="qch"><span class="qpts">30 pts</span><span class="qtype">text</span><span class="qregen">↻ Regenerate</span></div><div class="qt">What was the last game released under the FIFA name before EA renamed the series?</div><div class="qa">✓ FIFA 23</div></div>
+        <div class="qcard2"><div class="qch"><span class="qpts">40 pts</span><span class="qtype">mcq</span><span class="qregen">↻ Regenerate</span></div><div class="qt">Which FIFA game first introduced the "Volta Football" street mode?</div><div class="qa">✓ A — FIFA 20</div></div>
+        <div class="qcard2"><div class="qch"><span class="qpts">50 pts</span><span class="qtype">text</span><span class="qregen">↻ Regenerate</span></div><div class="qt">In FIFA 22, which two players shared the highest overall rating of 91?</div><div class="qa">✓ Lionel Messi &amp; Robert Lewandowski</div></div>
+      </div>
+      <div class="prev-right">
+        <div>
+          <div class="section-lbl" style="margin-bottom:10px">Board after adding</div>
+          <div class="board-mini">
+            <div class="bmt">FIFA Trivia Night 2025</div>
+            <div class="bmcols">
+              <div class="bmc"><div class="bmc-hdr">History</div><div class="bmt-tile">10</div><div class="bmt-tile">20</div><div class="bmt-tile">30</div><div class="bmt-tile">40</div><div class="bmt-tile">50</div></div>
+              <div class="bmc"><div class="bmc-hdr new">FIFA ✦</div><div class="bmt-tile new">10</div><div class="bmt-tile new">20</div><div class="bmt-tile new">30</div><div class="bmt-tile new">40</div><div class="bmt-tile new">50</div></div>
+              <div class="add-col"><div class="add-col-btn">＋</div></div>
+            </div>
+          </div>
+        </div>
+        <button class="btn-p" style="width:100%;padding:11px;font-size:12px">✓ Add Category to Quiz</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7: QUIZ BOARD -->
+  <div class="screen laptop" style="display:none">
+    <div class="bar"><div class="dots"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div></div><div class="url">quizmaster.app/session/live</div></div>
+    <div class="s-board">
+      <div class="board-hdr"><div style="width:36px"></div><div class="qtitle">FIFA TRIVIA NIGHT 2025</div><div class="icon-btn">🏆</div></div>
+      <div class="col-hdrs"><div class="col-hdr">FIFA History</div><div class="col-hdr">Ultimate Team</div><div class="col-hdr">Career Mode</div><div class="col-hdr">Iconic Players</div></div>
+      <div class="tile-grid">
+        <div class="tile done"><div class="tpts">10</div></div><div class="tile"><div class="tpts">10</div></div><div class="tile done"><div class="tpts">10</div></div><div class="tile"><div class="tpts">10</div></div>
+        <div class="tile done"><div class="tpts">20</div></div><div class="tile"><div class="tpts">20</div></div><div class="tile"><div class="tpts">20</div></div><div class="tile done"><div class="tpts">20</div></div>
+        <div class="tile"><div class="tpts">30</div></div><div class="tile done"><div class="tpts">30</div></div><div class="tile"><div class="tpts">30</div></div><div class="tile"><div class="tpts">30</div></div>
+        <div class="tile"><div class="tpts">40</div></div><div class="tile"><div class="tpts">40</div></div><div class="tile done"><div class="tpts">40</div></div><div class="tile"><div class="tpts">40</div></div>
+        <div class="tile"><div class="tpts">50</div></div><div class="tile"><div class="tpts">50</div></div><div class="tile"><div class="tpts">50</div></div><div class="tile"><div class="tpts">50</div></div>
+      </div>
+      <div class="fab">↺ Reset Buzzer</div>
+    </div>
+  </div>
+
+  <!-- 8: QUESTION MODAL -->
+  <div class="screen laptop" style="display:none">
+    <div class="bar"><div class="dots"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div></div><div class="url">quizmaster.app/session/live</div></div>
+    <div class="s-modal">
+      <div class="modal-bg"></div>
+      <div class="mini-board"><div class="board-hdr" style="margin-bottom:0"><div style="width:30px"></div><div class="qtitle" style="font-size:14px">FIFA TRIVIA NIGHT 2025</div><div class="icon-btn" style="font-size:11px">🏆</div></div></div>
+      <div class="modal-sheet">
+        <div>
+          <div class="modal-lbl">Ultimate Team</div>
+          <div class="pts-badge">30 points</div>
+          <div class="modal-q">In FIFA Ultimate Team, what is the difference between a "Hero" card and an "Icon" card?</div>
+          <div class="ans-box"><div class="ans-lbl">ANSWER — revealed on correct</div><div class="ans-text">Icons are retired world legends; Heroes are regional legends with a specific league boost</div></div>
+          <div class="act-row">
+            <button class="bcorrect">✓ Correct</button>
+            <button class="bwrong">✗ Wrong</button>
+            <button class="bskip">Skip</button>
+            <button class="bundo">↩ Undo</button>
+            <button class="bundo" style="margin-left:auto">↺ Reset Buzzer</button>
+          </div>
+        </div>
+        <div class="buzz-panel">
+          <div class="bz-lbl">Buzz Order</div>
+          <div class="bz-item first"><div class="bz-rank r1">1</div><div class="bz-name first">Priya</div><div class="bz-t">0.3s</div></div>
+          <div class="bz-item"><div class="bz-rank r2">2</div><div class="bz-name">Marcus</div><div class="bz-t">0.8s</div></div>
+          <div class="bz-item"><div class="bz-rank r3">3</div><div class="bz-name">Aisha</div><div class="bz-t">1.2s</div></div>
+          <button class="reset-bz">↺ Reset Buzzer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9: QM PHONE -->
+  <div class="screen" style="display:none">
+    <div class="phone-wrap"><div class="phone"><div class="notch"><div class="npill"></div></div>
+    <div class="phone-body">
+      <div class="s-qmphone">
+        <div class="qmp-hdr"><div><div class="qmp-title">🎛 Quiz Controller</div><div style="font-size:10px;color:#6b7280">FIFA Trivia Night 2025</div></div><div class="qmp-live">● Live</div></div>
+        <div class="qmp-body">
+          <div class="qmp-qtext">In FIFA Ultimate Team, what is the difference between a "Hero" card and an "Icon" card?<div class="qmp-pts">⭐ 30 pts — Ultimate Team</div></div>
+          <div>
+            <div class="section-lbl" style="margin-bottom:8px">Buzz Order</div>
+            <div class="qmp-bz-item active"><div class="bz-rank r1">1</div><div style="font-size:12px;color:#22c55e;font-weight:700">Priya</div><div style="font-size:10px;color:#6b7280;margin-left:auto">0.3s</div></div>
+            <div class="qmp-bz-item"><div class="bz-rank r2">2</div><div style="font-size:12px;color:#c0c8d8">Marcus</div><div style="font-size:10px;color:#6b7280;margin-left:auto">0.8s</div></div>
+            <div class="qmp-bz-item"><div class="bz-rank r3">3</div><div style="font-size:12px;color:#c0c8d8">Aisha</div><div style="font-size:10px;color:#6b7280;margin-left:auto">1.2s</div></div>
+          </div>
+        </div>
+        <div class="qmp-actions">
+          <div class="act-grid"><button class="big-correct">✓ Correct</button><button class="big-wrong">✗ Wrong</button></div>
+          <div class="sec-acts"><div class="sbtn">⏭ Skip</div><div class="sbtn">↩ Undo</div><div class="sbtn">↺ Reset</div></div>
+        </div>
+      </div>
+    </div></div></div>
+  </div>
+
+  <!-- 10: BUZZER READY -->
+  <div class="screen" style="display:none">
+    <div class="phone-wrap"><div class="phone"><div class="notch"><div class="npill"></div></div>
+    <div class="phone-body">
+      <div class="s-pbuzz">
+        <div class="p-hdr"><div class="p-name">Priya</div><div class="p-score">💰 80 pts</div></div>
+        <div class="p-body">
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);text-align:center">Question is open · Get ready</div>
+          <div class="buzz-btn">BUZZ!</div>
+          <div class="p-hint">Tap when you know the answer</div>
+        </div>
+        <div class="p-ftr"><div class="lb-icon">📊</div><div style="font-size:10px;color:rgba(255,255,255,0.25)">FIFA Trivia Night 2025</div></div>
+      </div>
+    </div></div></div>
+  </div>
+
+  <!-- 11: FIRST BUZZ GREEN -->
+  <div class="screen" style="display:none">
+    <div class="phone-wrap"><div class="phone"><div class="notch"><div class="npill"></div></div>
+    <div class="phone-body">
+      <div class="s-green">
+        <div class="first-num">1</div>
+        <div class="first-txt">YOU'RE<br>FIRST! 🎉</div>
+        <div class="first-sub">Answer the question now!</div>
+        <div class="first-wait">Waiting for Quiz Master to score…</div>
+      </div>
+    </div></div></div>
+  </div>
+
+  <!-- 12: NOT FIRST RED -->
+  <div class="screen" style="display:none">
+    <div class="phone-wrap"><div class="phone"><div class="notch"><div class="npill"></div></div>
+    <div class="phone-body">
+      <div class="s-red">
+        <div class="nth-num">2nd</div>
+        <div class="nth-lbl">You were 2nd to buzz<br>Stay ready — if #1 is wrong, you're next!</div>
+        <div class="nth-wait">Waiting for Quiz Master…</div>
+      </div>
+    </div></div></div>
+  </div>
+
+  <!-- 13: LEADERBOARD -->
+  <div class="screen laptop" style="display:none">
+    <div class="bar"><div class="dots"><div class="d" style="background:#ff5f57"></div><div class="d" style="background:#febc2e"></div><div class="d" style="background:#28c840"></div></div><div class="url">quizmaster.app/results/session</div></div>
+    <div class="s-lb">
+      <div class="lb-hdr"><div class="lb-trophy">🏆</div><div class="lb-title">FIFA Trivia Night 2025</div><div class="lb-sub2">Final Results · 4 categories · 20 questions</div></div>
+      <table class="lbt">
+        <thead><tr><th>Rank</th><th>Player</th><th>Score</th><th>Correct</th><th>Deductions</th></tr></thead>
+        <tbody>
+          <tr class="gold"><td>🥇</td><td style="font-weight:700">Priya</td><td class="score">310 pts</td><td style="color:#22c55e">8 correct</td><td style="color:#ef4444">−30 pts</td></tr>
+          <tr><td>🥈</td><td>Marcus</td><td class="score">240 pts</td><td style="color:#22c55e">7 correct</td><td style="color:#6b7280">—</td></tr>
+          <tr><td>🥉</td><td>Aisha</td><td class="score">190 pts</td><td style="color:#22c55e">5 correct</td><td style="color:#ef4444">−60 pts</td></tr>
+          <tr><td>4️⃣</td><td>Dev</td><td class="score">120 pts</td><td style="color:#22c55e">4 correct</td><td style="color:#ef4444">−40 pts</td></tr>
+          <tr><td>5️⃣</td><td>Reena</td><td class="score">80 pts</td><td style="color:#22c55e">3 correct</td><td style="color:#6b7280">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /canvas -->
+
+<script>
+const meta = [
+  {name:'Login', pill:'💻 Laptop', pillClass:'dp-laptop', desc:'Quiz master signs in with Google — participants need no account'},
+  {name:'Dashboard', pill:'💻 Laptop', pillClass:'dp-laptop', desc:'Quiz master sees all their quizzes and creates new ones'},
+  {name:'Create Quiz', pill:'💻 Laptop', pillClass:'dp-laptop', desc:'Step 1 — quiz title and scoring rules (negative marking toggle)'},
+  {name:'Add Category', pill:'💻 Laptop', pillClass:'dp-laptop', desc:'Enter category title, choose import method — live board preview updates on the right'},
+  {name:'Sheets Import', pill:'💻 Laptop', pillClass:'dp-laptop', desc:'Paste Google Sheet URL — sample template with column explanations'},
+  {name:'AI Generate', pill:'💻 Laptop', pillClass:'dp-laptop', desc:'Topic, optional context, count, difficulty, point increment — Claude generates'},
+  {name:'AI Preview', pill:'💻 Laptop', pillClass:'dp-laptop', desc:'Review each question, regenerate individually, then add category to board'},
+  {name:'Quiz Board', pill:'💻 Laptop', pillClass:'dp-laptop', desc:'Live Jeopardy board — bright tiles are unanswered, faded tiles are done'},
+  {name:'Question Modal', pill:'💻 Laptop', pillClass:'dp-laptop', desc:'Opens when QM clicks a tile — question, answer (revealed on correct), buzz list, action buttons'},
+  {name:'QM Controller', pill:'📱 QM Phone', pillClass:'dp-phone', desc:'QM scans QR on laptop — same Google login gives them this remote control view'},
+  {name:'Buzzer — Ready', pill:'📱 Participant', pillClass:'dp-phone', desc:'Full-screen buzz button — score visible top right, leaderboard icon bottom left'},
+  {name:'Buzzer — 1st 🟢', pill:'📱 Participant', pillClass:'dp-phone', desc:'Screen goes full green — participant knows they buzzed first and should answer'},
+  {name:'Buzzer — 2nd+ 🔴', pill:'📱 Participant', pillClass:'dp-phone', desc:'Screen goes full red with position number — stay ready in case #1 is wrong'},
+  {name:'Leaderboard', pill:'💻 Laptop', pillClass:'dp-laptop', desc:'Auto-shown when all questions done — with confetti animation, full score breakdown'},
+];
+
+function go(idx, el) {
+  const screens = document.querySelectorAll('.screen');
+  screens.forEach(s => s.style.display = 'none');
+  screens[idx].style.display = '';
+  document.querySelectorAll('.stab:not(.section-head)').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const m = meta[idx];
+  document.getElementById('smeta-name').textContent = m.name;
+  document.getElementById('smeta-desc').textContent = m.desc;
+  const pill = document.getElementById('smeta-pill');
+  pill.textContent = m.pill;
+  pill.className = 'device-pill ' + m.pillClass;
+  document.getElementById('canvas').scrollTop = 0;
+}
+</script>
+</body>
+</html>
