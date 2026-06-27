@@ -28,7 +28,7 @@ export default async function ConfigurePage({ params }: { params: Promise<{ quiz
     ? await service
         .from('questions')
         .select('id, category_id, question_text, answer_text, points, order_index, is_answered')
-        .in('category_id', categories.map(c => c.id))
+        .in('category_id', categories.map((c: { id: string }) => c.id))
         .order('order_index')
     : { data: [] }
 

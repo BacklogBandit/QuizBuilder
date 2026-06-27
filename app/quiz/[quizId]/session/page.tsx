@@ -47,7 +47,7 @@ export default async function SessionPage({
     ? await service
         .from('questions')
         .select('id, category_id, question_text, answer_text, options, type, points, order_index, is_answered, skipped')
-        .in('category_id', categories.map(c => c.id))
+        .in('category_id', categories.map((c: { id: string }) => c.id))
         .order('order_index')
     : { data: [] }
 

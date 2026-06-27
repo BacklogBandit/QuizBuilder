@@ -39,7 +39,7 @@ export default async function ControllerPage({ params }: { params: Promise<{ ses
     ? await service
         .from('questions')
         .select('id, category_id, question_text, answer_text, points, order_index, is_answered, skipped')
-        .in('category_id', categories.map(c => c.id))
+        .in('category_id', categories.map((c: { id: string }) => c.id))
         .order('order_index')
     : { data: [] }
 
