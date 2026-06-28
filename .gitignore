@@ -18,6 +18,9 @@ build/
 # Vercel
 .vercel
 
+# local-only docs
+build-retrospective.md
+
 # misc
 .DS_Store
 *.pem
