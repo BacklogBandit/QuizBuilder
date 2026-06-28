@@ -349,14 +349,19 @@ function QuestionModal({
             {question.options.map((opt, i) => {
               const labels = ['A', 'B', 'C', 'D']
               const isCorrect = revealAnswer && opt === question.answer_text
+              const isActuallyCorrect = opt === question.answer_text
               return (
-                <div
+                <button
                   key={i}
+                  disabled={revealAnswer}
+                  onClick={() => isActuallyCorrect ? onCorrect() : handleWrong()}
                   className={cn(
-                    'flex items-center gap-3 px-5 py-4 rounded-2xl border-2 text-left transition-colors',
+                    'flex items-center gap-3 px-5 py-4 rounded-2xl border-2 text-left transition-all',
                     isCorrect
                       ? 'bg-green-900/50 border-green-400/80 text-green-200'
-                      : 'bg-white/5 border-white/10 text-gray-200'
+                      : revealAnswer
+                        ? 'bg-white/5 border-white/10 text-gray-200 opacity-50'
+                        : 'bg-white/5 border-white/10 text-gray-200 hover:bg-white/10 hover:border-purple-400/60 cursor-pointer active:scale-[0.98]'
                   )}
                 >
                   <span className={cn(
@@ -366,7 +371,7 @@ function QuestionModal({
                     {labels[i]}
                   </span>
                   <span className="font-semibold text-lg leading-snug">{opt}</span>
-                </div>
+                </button>
               )
             })}
           </div>
