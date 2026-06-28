@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Plus, Play, Trash2, Clock } from 'lucide-react'
+import { Plus, Play, Clock } from 'lucide-react'
+import DeleteQuizButton from '@/components/DeleteQuizButton'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -129,6 +130,7 @@ function QuizCard({ quiz }: { quiz: { id: string; title: string; status: string;
             Launch
           </Link>
         )}
+        <DeleteQuizButton quizId={quiz.id} quizTitle={quiz.title} />
       </div>
     </div>
   )
